@@ -4,6 +4,7 @@ import {
   sanitizeLiveModels,
   sanitizeAccountDisplay,
   parseSseChunks,
+  createLiveModelsStream,
 } from '../lib/server/liveModels.js';
 import { GET } from '../app/api/live-models/route.js';
 import { defaultSessionStore } from '../lib/server/session.js';
@@ -376,6 +377,107 @@ test('GET /api/live-models terminates and emits unauthenticated when session is 
     assert.equal(next.done, true);
   } finally {
     defaultUpstreamClient.request = originalRequest;
+    defaultSessionStore.destroySession(token);
+  }
+});
+
+test('createLiveModelsStream preserves stream on transient auth revalidation error', async () => {
+  const { token } = defaultSessionStore.createSession('mock-upstream-token');
+  const originalRequest = defaultUpstreamClient.request;
+  const originalRevalidate = defaultUpstreamClient.revalidateAuthResult;
+
+  try {
+    let upstreamController;
+    defaultUpstreamClient.request = async () => {
+      const stream = new ReadableStream({
+        start(controller) {
+          upstreamController = controller;
+        },
+      });
+      return new Response(stream, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      });
+    };
+
+    defaultUpstreamClient.revalidateAuthResult = async () => ({
+      status: 'error',
+      transportError: true,
+      authenticated: null,
+    });
+
+    const liveStream = createLiveModelsStream({
+      upstreamToken: 'mock-upstream-token',
+      sessionToken: token,
+      revalidateIntervalMs: 20,
+    });
+
+    const reader = liveStream.getReader();
+
+    await new Promise((r) => setTimeout(r, 60));
+
+    const encoder = new TextEncoder();
+    upstreamController.enqueue(
+      encoder.encode('data: {"activeRequests":[{"model":"claude-3-5-sonnet","provider":"anthropic","account":"a@b.com","count":1}]}\n\n')
+    );
+
+    const { value, done } = await reader.read();
+    assert.equal(done, false, 'Stream must not be closed by transient auth revalidate error');
+    const text = new TextDecoder().decode(value);
+    assert.ok(!text.includes('"status":"error"'), 'Stream must not emit error event on transient auth failure');
+    assert.ok(text.includes('claude-3-5-sonnet'), 'Stream should deliver live models data');
+
+    await reader.cancel();
+  } finally {
+    defaultUpstreamClient.request = originalRequest;
+    defaultUpstreamClient.revalidateAuthResult = originalRevalidate;
+    defaultSessionStore.destroySession(token);
+  }
+});
+
+test('createLiveModelsStream terminates with unauthenticated on explicit revalidation loss', async () => {
+  const { token } = defaultSessionStore.createSession('mock-upstream-token');
+  const originalRequest = defaultUpstreamClient.request;
+  const originalRevalidate = defaultUpstreamClient.revalidateAuthResult;
+
+  try {
+    defaultUpstreamClient.request = async () => {
+      const stream = new ReadableStream({
+        start() {},
+      });
+      return new Response(stream, {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      });
+    };
+
+    defaultUpstreamClient.revalidateAuthResult = async () => ({
+      status: 'unauthenticated',
+      authenticated: false,
+    });
+
+    const liveStream = createLiveModelsStream({
+      upstreamToken: 'mock-upstream-token',
+      sessionToken: token,
+      revalidateIntervalMs: 20,
+    });
+
+    const reader = liveStream.getReader();
+    const readPromise = reader.read();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Revalidation failed to close stream on unauthenticated')), 200)
+    );
+
+    const { value, done } = await Promise.race([readPromise, timeoutPromise]);
+    assert.equal(done, false);
+    const text = new TextDecoder().decode(value);
+    assert.ok(text.includes('"status":"unauthenticated"'));
+
+    const next = await reader.read();
+    assert.equal(next.done, true);
+  } finally {
+    defaultUpstreamClient.request = originalRequest;
+    defaultUpstreamClient.revalidateAuthResult = originalRevalidate;
     defaultSessionStore.destroySession(token);
   }
 });
