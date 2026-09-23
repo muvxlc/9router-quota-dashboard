@@ -1,0 +1,22 @@
+{
+  "name": "quota-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -H 127.0.0.1 -p 20130",
+    "build": "next build --webpack",
+    "start": "next start -H 127.0.0.1 -p 20130",
+    "test": "node --test test/*.test.js",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "next": "16.1.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-config-next": "16.1.6"
+  }
+}
