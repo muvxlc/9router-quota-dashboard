@@ -1,0 +1,27 @@
+# Dependency and build caches
+node_modules
+.next
+.turbo
+
+# Environment and secrets
+.env
+.env.*
+*.local
+
+# Tests and development artifacts
+test
+tests
+test-evidence
+*.test.js
+*.test.mjs
+coverage
+
+# Documentation and design previews
+design-preview-*.html
+*.log
+KOMODO.md
+
+# Git and OS metadata
+.git
+.gitignore
+.DS_Store
