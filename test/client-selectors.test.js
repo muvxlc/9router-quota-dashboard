@@ -6,6 +6,7 @@ import {
   getProviderCommonWindows,
   groupAccountsByProvider,
   filterAndSortAccounts,
+  getProviderQuotaAverages,
 } from '../lib/client/selectors.js';
 
 test('deriveAccountStatus identifies inactive, unavailable, no-data, exhausted, low, and healthy', () => {
@@ -300,5 +301,154 @@ test('regression: activeFilter default active excludes inactive accounts, all in
   const allAccounts = filterAndSortAccounts(accounts, { activeFilter: 'all' });
   assert.equal(allAccounts.length, 4);
   assert.equal(allAccounts.filter((a) => a.active === false).length, 2);
+});
+
+test('getProviderQuotaAverages computes pure per-provider quota averages for Codex and Antigravity', () => {
+  const codexGroup = {
+    provider: 'codex',
+    accounts: [
+      {
+        id: 'c1',
+        quota: {
+          status: 'ok',
+          windows: [
+            { key: 'session', remainingPercent: 80, unlimited: false },
+            { key: 'weekly', remainingPercent: 50, unlimited: false },
+          ],
+        },
+      },
+      {
+        id: 'c2',
+        quota: {
+          status: 'ok',
+          windows: [
+            { key: 'session', remainingPercent: 0, unlimited: false },
+            { key: 'weekly', remainingPercent: 'invalid', unlimited: false },
+          ],
+        },
+      },
+      {
+        id: 'c3',
+        quota: {
+          status: 'unavailable',
+          windows: [
+            { key: 'session', remainingPercent: 100, unlimited: false },
+          ],
+        },
+      },
+      {
+        id: 'c4',
+        quota: {
+          status: 'ok',
+          windows: [
+            { key: 'session', remainingPercent: null, unlimited: true },
+            { key: 'weekly', remainingPercent: 100, unlimited: false },
+          ],
+        },
+      },
+    ],
+  };
+
+  const codexAverages = getProviderQuotaAverages(codexGroup);
+  assert.equal(codexAverages.length, 2);
+  assert.deepEqual(codexAverages[0], {
+    key: 'session',
+    label: '5-Hour',
+    average: 40,
+    count: 2,
+  });
+  assert.deepEqual(codexAverages[1], {
+    key: 'weekly',
+    label: 'Weekly',
+    average: 75,
+    count: 2,
+  });
+
+  const antigravityGroup = {
+    provider: 'antigravity',
+    accounts: [
+      {
+        id: 'ag1',
+        quota: {
+          status: 'ok',
+          windows: [
+            { key: 'gemini', remainingPercent: 90, unlimited: false },
+            { key: 'gemini_weekly', remainingPercent: 60, unlimited: false },
+            { key: 'claude', remainingPercent: 10, unlimited: false },
+          ],
+        },
+      },
+      {
+        id: 'ag2',
+        quota: {
+          status: 'ok',
+          windows: [
+            { key: 'gemini', remainingPercent: 75, unlimited: false },
+            { key: 'gemini_weekly', remainingPercent: 0, unlimited: false },
+          ],
+        },
+      },
+      {
+        id: 'ag3',
+        quota: null,
+      },
+    ],
+  };
+
+  const agAverages = getProviderQuotaAverages(antigravityGroup);
+  assert.equal(agAverages.length, 2);
+  assert.deepEqual(agAverages[0], {
+    key: 'gemini',
+    label: 'Gemini (Flash / Pro)',
+    average: 82.5,
+    count: 2,
+  });
+  assert.deepEqual(agAverages[1], {
+    key: 'gemini_weekly',
+    label: 'Gemini Weekly',
+    average: 30,
+    count: 2,
+  });
+
+  const emptyGroup = {
+    provider: 'codex',
+    accounts: [
+      {
+        id: 'c-empty',
+        quota: {
+          status: 'unavailable',
+          windows: [{ key: 'session', remainingPercent: 0 }],
+        },
+      },
+      {
+        id: 'c-unlimited',
+        quota: {
+          status: 'ok',
+          windows: [{ key: 'session', unlimited: true, remainingPercent: null }],
+        },
+      },
+    ],
+  };
+
+  const emptyAverages = getProviderQuotaAverages(emptyGroup);
+  assert.deepEqual(emptyAverages, [
+    { key: 'session', label: '5-Hour', average: null, count: 0 },
+    { key: 'weekly', label: 'Weekly', average: null, count: 0 },
+  ]);
+
+  const connections = [
+    { id: 'c1', provider: 'codex', label: 'test@example.com', active: true },
+  ];
+  const quotas = {
+    c1: { status: 'ok', windows: [{ key: 'session', label: '5h', remainingPercent: 70, unlimited: false }] },
+  };
+  const grouped = groupAccountsByProvider(connections, quotas);
+  const groupedAverages = getProviderQuotaAverages(grouped[0]);
+  assert.equal(groupedAverages[0].key, 'session');
+  assert.equal(groupedAverages[0].average, 70);
+  assert.equal(groupedAverages[0].count, 1);
+  assert.equal(groupedAverages[1].key, 'weekly');
+  assert.equal(groupedAverages[1].average, null);
+  assert.equal(groupedAverages[1].count, 0);
 });
 
