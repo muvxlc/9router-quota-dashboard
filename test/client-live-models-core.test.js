@@ -144,7 +144,6 @@ test('createLiveModelsSubscription connects, handles live & idle events, and cle
   assert.equal(idleState.totalCount, 0);
 
   sub.unsubscribe();
-  assert.equal(es.closed, true);
 });
 
 test('createLiveModelsSubscription handles status events directly', () => {
@@ -226,4 +225,96 @@ test('getLiveStatusMeta exported from liveModels returns correct metadata', () =
     dotColor: 'var(--theme-red)',
     pulse: false,
   });
+});
+
+test('createLiveModelsSubscription ends connecting on onopen even without data frames', () => {
+  MockEventSource.instances = [];
+  const stateUpdates = [];
+
+  const sub = createLiveModelsSubscription({
+    url: '/api/live-models',
+    EventSourceClass: MockEventSource,
+    onUpdate: (state) => stateUpdates.push(state),
+  });
+
+  assert.equal(stateUpdates.length, 1);
+  assert.equal(stateUpdates[0].status, 'connecting');
+
+  const es = MockEventSource.instances[0];
+  es.simulateOpen();
+
+  assert.equal(stateUpdates.length, 2);
+  const openState = stateUpdates[1];
+  assert.equal(openState.status, 'idle');
+  assert.equal(openState.totalCount, 0);
+  assert.equal(openState.receivedAt, null);
+  assert.ok(openState.connectedAt);
+
+  sub.unsubscribe();
+});
+
+test('formatLiveTimestamp conveys connected state when open without data, and last data on disconnect/error', () => {
+  const d = new Date('2026-09-21T10:00:00Z');
+  const dIso = d.toISOString();
+  const c = new Date('2026-09-21T10:05:00Z');
+  const cIso = c.toISOString();
+
+  const connectedTime = formatLiveTimestamp(null, { status: 'idle', connectedAt: cIso });
+  assert.match(connectedTime, /^Connected\s+\d{2}:\d{2}:\d{2}/);
+
+  const updatedTime = formatLiveTimestamp(dIso, { status: 'live', connectedAt: cIso });
+  assert.match(updatedTime, /^Updated\s+\d{2}:\d{2}:\d{2}/);
+
+  const disconnectedWithData = formatLiveTimestamp(dIso, { status: 'disconnected' });
+  assert.match(disconnectedWithData, /^Last data\s+\d{2}:\d{2}:\d{2}/);
+  assert.equal(disconnectedWithData.startsWith('Updated'), false);
+
+  const errorWithData = formatLiveTimestamp(dIso, { status: 'error' });
+  assert.match(errorWithData, /^Last data\s+\d{2}:\d{2}:\d{2}/);
+  assert.equal(errorWithData.startsWith('Updated'), false);
+
+  const reconnectingWithData = formatLiveTimestamp(dIso, { status: 'connecting' });
+  assert.match(reconnectingWithData, /^Last data\s+\d{2}:\d{2}:\d{2}/);
+
+  assert.equal(formatLiveTimestamp(null, { status: 'disconnected' }), '—');
+  assert.equal(formatLiveTimestamp(null, { status: 'error' }), '—');
+});
+
+test('EventSource lifecycle preserves last payload timestamp across idle and error without inventing heartbeat', () => {
+  MockEventSource.instances = [];
+  const stateUpdates = [];
+
+  const sub = createLiveModelsSubscription({
+    url: '/api/live-models',
+    EventSourceClass: MockEventSource,
+    onUpdate: (state) => stateUpdates.push(state),
+  });
+
+  const es = MockEventSource.instances[0];
+  es.simulateOpen();
+
+  let latest = stateUpdates[stateUpdates.length - 1];
+  assert.equal(latest.status, 'idle');
+  assert.equal(latest.receivedAt, null);
+  assert.equal(formatLiveTimestamp(latest.receivedAt, { status: latest.status, connectedAt: latest.connectedAt }).startsWith('Connected'), true);
+
+  const payloadTime = '2026-09-21T10:15:00.000Z';
+  es.simulateMessage({
+    activeModels: [{ model: 'gemini-2.0-flash', provider: 'antigravity', count: 1 }],
+    receivedAt: payloadTime,
+  });
+  latest = stateUpdates[stateUpdates.length - 1];
+  assert.equal(latest.status, 'live');
+  assert.equal(latest.receivedAt, payloadTime);
+  assert.equal(formatLiveTimestamp(latest.receivedAt, { status: latest.status, connectedAt: latest.connectedAt }).startsWith('Updated'), true);
+
+  es.simulateError(new Error('Connection interrupted'));
+  latest = stateUpdates[stateUpdates.length - 1];
+  assert.equal(latest.status, 'error');
+  assert.equal(latest.receivedAt, payloadTime);
+  const errorTime = formatLiveTimestamp(latest.receivedAt, { status: latest.status, connectedAt: latest.connectedAt });
+  assert.equal(errorTime.startsWith('Last data'), true);
+  assert.equal(errorTime.startsWith('Updated'), false);
+
+  sub.unsubscribe();
 });

@@ -115,7 +115,7 @@ test('createLiveModelsSubscription gracefully handles malformed JSON and error e
   es.simulateOpen();
 
   es.simulateMessage('this is not json');
-  assert.equal(stateUpdates[stateUpdates.length - 1].status, 'connecting');
+  assert.equal(stateUpdates[stateUpdates.length - 1].status, 'idle');
 
   es.simulateError(new Error('Network error'));
   assert.equal(stateUpdates[stateUpdates.length - 1].status, 'error');

@@ -20,6 +20,7 @@ export default function LiveModelsStrip({
     activeModels: [],
     totalCount: 0,
     receivedAt: null,
+    connectedAt: null,
   });
   const [showModal, setShowModal] = useState(false);
 
@@ -35,7 +36,7 @@ export default function LiveModelsStrip({
     return () => sub.unsubscribe();
   }, [url, onSessionLoss, customSubscription]);
 
-  const { status, activeModels, totalCount, receivedAt } = state;
+  const { status, activeModels, totalCount, receivedAt, connectedAt } = state;
   const visibleModels = activeModels.slice(0, 3);
   const remainingCount = activeModels.length - visibleModels.length;
 
@@ -103,8 +104,15 @@ export default function LiveModelsStrip({
 
         <div className="live-activity-right">
           <span>{totalCount} active request{totalCount === 1 ? '' : 's'}</span>
-          <span className="live-strip-time tabular-nums">
-            {formatLiveTimestamp(receivedAt)}
+          <span
+            className="live-strip-time tabular-nums"
+            aria-label={
+              status === 'disconnected' || status === 'error'
+                ? `Connection ${status}. ${receivedAt ? `Last data received ${formatLiveTimestamp(receivedAt, { status, connectedAt })}` : 'No data received.'}`
+                : `Live stream ${formatLiveTimestamp(receivedAt, { status, connectedAt })}`
+            }
+          >
+            {formatLiveTimestamp(receivedAt, { status, connectedAt })}
           </span>
           {activeModels.length > 0 && (
             <button
