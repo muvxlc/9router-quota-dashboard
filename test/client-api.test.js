@@ -13,20 +13,8 @@ import {
 
 test('fetchAllConnections fetches sequentially, dedupes, and handles clamped pagination', async () => {
   const pages = {
-    1: {
-      connections: [
-        { id: 'c1', provider: 'codex', label: 'user1@test.com', active: true },
-        { id: 'c2', provider: 'codex', label: 'user2@test.com', active: true },
-      ],
-      pagination: { page: 1, pageSize: 2, total: 4, totalPages: 2 },
-    },
-    2: {
-      connections: [
-        { id: 'c3', provider: 'antigravity', label: 'user3@test.com', active: true },
-        { id: 'c1', provider: 'codex', label: 'user1@test.com', active: true }, // duplicate
-      ],
-      pagination: { page: 2, pageSize: 2, total: 4, totalPages: 2 },
-    },
+    1: { connections: [{ id: 'c1', provider: 'codex', label: 'user1@test.com', active: true }, { id: 'c2', provider: 'codex', label: 'user2@test.com', active: true }], pagination: { page: 1, pageSize: 2, total: 4, totalPages: 2 } },
+    2: { connections: [{ id: 'c3', provider: 'antigravity', label: 'user3@test.com', active: true }, { id: 'c1', provider: 'codex', label: 'user1@test.com', active: true }], pagination: { page: 2, pageSize: 2, total: 4, totalPages: 2 } },
   };
 
   const fetchedPages = [];
@@ -34,11 +22,7 @@ test('fetchAllConnections fetches sequentially, dedupes, and handles clamped pag
     const pageMatch = url.match(/page=(\d+)/);
     const p = pageMatch ? Number(pageMatch[1]) : 1;
     fetchedPages.push(p);
-    return {
-      ok: true,
-      status: 200,
-      json: async () => pages[p] || { connections: [], pagination: { page: p, pageSize: 2, total: 0, totalPages: 0 } },
-    };
+    return { ok: true, status: 200, json: async () => pages[p] || { connections: [], pagination: { page: p, pageSize: 2, total: 0, totalPages: 0 } } };
   };
 
   const batches = [];
@@ -95,47 +79,20 @@ test('fetchQuotaWithCadence respects nextRefreshAt unless expired or forced', as
   };
 
   // 1. Existing valid quota with future nextRefreshAt -> returns cached, 0 network calls
-  const existingValid = {
-    connectionId: 'c1',
-    status: 'ok',
-    nextRefreshAt: futureIso,
-    receivedAt: new Date(now - 5000).toISOString(),
-    windows: [{ key: '5h', remainingPercent: 85, unlimited: false }],
-  };
+  const existingValid = { connectionId: 'c1', status: 'ok', nextRefreshAt: futureIso, receivedAt: new Date(now - 5000).toISOString(), windows: [{ key: '5h', remainingPercent: 85, unlimited: false }] };
 
-  const res1 = await fetchQuotaWithCadence({
-    fetchFn: mockFetch,
-    connectionId: 'c1',
-    cachedQuota: existingValid,
-    force: false,
-    nowMs: now,
-  });
+  const res1 = await fetchQuotaWithCadence({ fetchFn: mockFetch, connectionId: 'c1', cachedQuota: existingValid, force: false, nowMs: now });
   assert.equal(networkCalls, 0);
   assert.equal(res1.windows[0].remainingPercent, 85);
 
   // 2. Existing expired quota -> fetches network
-  const existingExpired = {
-    ...existingValid,
-    nextRefreshAt: pastIso,
-  };
-  const res2 = await fetchQuotaWithCadence({
-    fetchFn: mockFetch,
-    connectionId: 'c1',
-    cachedQuota: existingExpired,
-    force: false,
-    nowMs: now,
-  });
+  const existingExpired = { ...existingValid, nextRefreshAt: pastIso };
+  const res2 = await fetchQuotaWithCadence({ fetchFn: mockFetch, connectionId: 'c1', cachedQuota: existingExpired, force: false, nowMs: now });
   assert.equal(networkCalls, 1);
   assert.equal(res2.windows[0].remainingPercent, 80);
 
   // 3. Force refresh -> fetches network even if future
-  await fetchQuotaWithCadence({
-    fetchFn: mockFetch,
-    connectionId: 'c1',
-    cachedQuota: existingValid,
-    force: true,
-    nowMs: now,
-  });
+  await fetchQuotaWithCadence({ fetchFn: mockFetch, connectionId: 'c1', cachedQuota: existingValid, force: true, nowMs: now });
   assert.equal(networkCalls, 2);
 });
 
@@ -226,4 +183,110 @@ test('fetchStats requests period and preserves scope and accounts stats', async 
   assert.equal(requestedUrl, '/api/stats?period=7d');
   assert.equal(stats.scope, 'all-router-traffic');
   assert.equal(stats.totals.requests, 100);
+});
+
+test('fetchQuotaWithCadence passes force query param when force=true to bypass server cache', async () => {
+  let requestedUrl = null;
+  const mockFetch = async (url) => {
+    requestedUrl = url;
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ connectionId: 'c1', status: 'ok', windows: [] }),
+    };
+  };
+
+  await fetchQuotaWithCadence({
+    fetchFn: mockFetch,
+    connectionId: 'c1',
+    force: true,
+  });
+  assert.equal(requestedUrl, '/api/quota/c1?force=true');
+
+  await fetchQuotaWithCadence({
+    fetchFn: mockFetch,
+    connectionId: 'c1',
+    force: false,
+  });
+  assert.equal(requestedUrl, '/api/quota/c1');
+});
+
+test('fetchQuotaWithCadence preserves last known good quota as stale on transient error or upstream unavailable', async () => {
+  const goodQuota = {
+    connectionId: 'c1',
+    provider: 'antigravity',
+    plan: 'pro',
+    status: 'ok',
+    windows: [{ key: 'gemini', remainingPercent: 75, unlimited: false }],
+    receivedAt: '2026-09-23T10:00:00.000Z',
+    nextRefreshAt: '2026-09-23T10:01:00.000Z',
+  };
+
+  const mockFetch503 = async () => ({
+    ok: false,
+    status: 503,
+    json: async () => ({ error: { code: 'UPSTREAM_UNAVAILABLE' } }),
+  });
+  const res503 = await fetchQuotaWithCadence({
+    fetchFn: mockFetch503,
+    connectionId: 'c1',
+    cachedQuota: goodQuota,
+    force: true,
+  });
+  assert.equal(res503.status, 'stale');
+  assert.equal(res503.reason, 'STALE_DATA');
+  assert.equal(res503.windows[0].remainingPercent, 75);
+
+  const mockFetchUnavail = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      connectionId: 'c1',
+      provider: 'antigravity',
+      status: 'unavailable',
+      reason: 'PROVIDER_UNAVAILABLE',
+      windows: [],
+    }),
+  });
+  const resUnavail = await fetchQuotaWithCadence({
+    fetchFn: mockFetchUnavail,
+    connectionId: 'c1',
+    cachedQuota: goodQuota,
+    force: true,
+  });
+  assert.equal(resUnavail.status, 'stale');
+  assert.equal(resUnavail.reason, 'STALE_DATA');
+  assert.equal(resUnavail.windows[0].remainingPercent, 75);
+
+  const mockFetchAuth = async () => ({
+    ok: false,
+    status: 200,
+    json: async () => ({
+      error: { code: 'PROVIDER_AUTH_REQUIRED' },
+    }),
+  });
+  const resAuth = await fetchQuotaWithCadence({
+    fetchFn: mockFetchAuth,
+    connectionId: 'c1',
+    cachedQuota: goodQuota,
+    force: true,
+  });
+  assert.equal(resAuth.status, 'unavailable');
+  assert.equal(resAuth.reason, 'PROVIDER_AUTH_REQUIRED');
+  assert.equal(resAuth.windows.length, 0);
+
+  const mockFetch404 = async () => ({
+    ok: false,
+    status: 404,
+    json: async () => ({ error: { code: 'CONNECTION_NOT_FOUND' } }),
+  });
+  const res404 = await fetchQuotaWithCadence({
+    fetchFn: mockFetch404,
+    connectionId: 'c1',
+    cachedQuota: goodQuota,
+    force: true,
+  });
+  assert.equal(res404.status, 'unavailable');
+  assert.equal(res404.reason, 'CONNECTION_NOT_FOUND');
+  assert.equal(res404.windows.length, 0);
 });
