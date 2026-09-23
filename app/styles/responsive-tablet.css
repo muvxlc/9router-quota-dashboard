@@ -74,6 +74,12 @@
     flex-direction: column;
     min-height: 0;
   }
+  .pp-card-header {
+    min-height: 52px;
+    height: 52px;
+    padding: 8px 16px;
+    box-sizing: border-box;
+  }
 }
 
 @media (min-width: 1000px) and (max-width: 1024px) {
@@ -178,14 +184,5 @@
   }
   .pp-columns-legend {
     display: flex;
-  }
-  .pp-spec-card {
-    margin-top: 4px;
-    padding: 12px 16px;
-    gap: 8px;
-  }
-  .pp-spec-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 6px 12px;
   }
 }

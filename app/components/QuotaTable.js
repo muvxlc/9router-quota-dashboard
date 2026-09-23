@@ -2,6 +2,22 @@
 
 import StatusPill from './StatusPill.js';
 import QuotaWindowCell from './QuotaWindowCell.js';
+import { getProviderQuotaAverages } from '../../lib/client/selectors.js';
+
+function getAverageLabel(avg) {
+  if (avg.key === 'gemini') return 'Flash / Pro';
+  if (avg.key === 'gemini_weekly') return 'Weekly';
+  if (avg.key === 'session') return '5-Hour';
+  if (avg.key === 'weekly') return 'Weekly';
+  return avg.label || avg.key;
+}
+
+function formatAverageValue(avg) {
+  if (avg?.average === null || avg?.average === undefined || avg?.count === 0) {
+    return '—';
+  }
+  return `${avg.average}%`;
+}
 
 export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProvider }) {
   if (!groups || groups.length === 0) {
@@ -16,6 +32,7 @@ export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProv
 
   const renderGroupCard = (group, isRightCol = false) => {
     const { provider, providerTitle, accounts, windows, extraWindowsCount, isExpanded } = group;
+    const averages = getProviderQuotaAverages(group);
 
     return (
       <section
@@ -37,7 +54,14 @@ export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProv
                 onClick={() => onToggleExpandProvider?.(provider)}
                 aria-label={isExpanded ? `Show core quotas for ${providerTitle}` : `Show ${extraWindowsCount} more quotas for ${providerTitle}`}
               >
-                {isExpanded ? 'Core quotas' : `More quotas (${extraWindowsCount})`}
+                {isExpanded ? (
+                  'Core quotas'
+                ) : (
+                  <>
+                    <span>More quotas</span>
+                    <span>({extraWindowsCount})</span>
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -112,6 +136,32 @@ export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProv
             );
           })}
         </div>
+
+        <div
+          className="pp-card-footer pp-pool-averages"
+          aria-label={`Pool averages for ${providerTitle}`}
+        >
+          <div className="pp-pool-averages-label">
+            <span className="pp-pool-averages-title">Average remaining</span>
+          </div>
+          <div className="pp-pool-averages-list">
+            {averages.map((avg) => {
+              const label = getAverageLabel(avg);
+              const formattedVal = formatAverageValue(avg);
+              return (
+                <div
+                  key={avg.key}
+                  className="pp-pool-avg-cell"
+                  title={`${label}: ${formattedVal} (${avg.count} accounts)`}
+                  data-window={avg.key}
+                >
+                  <span className="pp-pool-avg-label">{label}</span>
+                  <span className="pp-pool-avg-value tabular-nums">{formattedVal}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </section>
     );
   };
@@ -127,39 +177,6 @@ export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProv
       {/* Right Column Stack */}
       <div className="right-col-stack">
         {rightGroups.map((g) => renderGroupCard(g, true))}
-
-        {/* Status Indicators / Legend Card */}
-        <div className="pp-spec-card">
-          <div className="pp-spec-header">
-            <div className="pp-spec-title">
-              <span>{'//'}</span> QUOTA PROTOCOL SPECIFICATION
-            </div>
-            <span className="pp-spec-tag">TELEMETRY</span>
-          </div>
-
-          <div className="pp-spec-grid">
-            <div className="pp-spec-item">
-              <span className="spec-dot green"></span>
-              <span><strong>Healthy (&gt;20%)</strong>: Standard Route</span>
-            </div>
-            <div className="pp-spec-item">
-              <span className="spec-dot amber"></span>
-              <span><strong>Low (&lt;20%)</strong>: Depletion Risk</span>
-            </div>
-            <div className="pp-spec-item">
-              <span className="spec-dot red"></span>
-              <span><strong>Depleted (0%)</strong>: Paused</span>
-            </div>
-            <div className="pp-spec-item">
-              <span className="spec-dot orange"></span>
-              <span><strong>Streaming</strong>: Active Lock</span>
-            </div>
-          </div>
-
-          <div className="pp-spec-footer">
-            <span>Quota windows reset independently</span>
-          </div>
-        </div>
       </div>
     </div>
   );

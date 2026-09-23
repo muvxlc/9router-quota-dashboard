@@ -127,11 +127,6 @@
     border-top: 1px solid var(--theme-border);
     font-size: 11.5px;
   }
-
-  .pp-spec-grid {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
 }
 
 /* --- Mobile Specific (< 600px) --- */
@@ -225,6 +220,22 @@
   }
   .pp-quota-meta .used {
     font-size: 10.5px;
+  }
+  .pp-card-footer, .pp-pool-averages {
+    padding: 8px 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .pp-pool-averages-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+  .pp-pool-avg-cell {
+    width: auto;
+    justify-content: space-between;
   }
 
   /* Modal drawers inset 16px, max height own scroll */

@@ -18,7 +18,7 @@ Reading this as: Quota and traffic governor dashboard for local AI gateway opera
 - Navbar surface: `#0C0C0E`, border `rgba(255, 255, 255, 0.12)`, radius 16px
 - Card surface (light): `#FFFFFF`, border `rgba(0, 0, 0, 0.16)`, radius 16px, shadow `0 4px 12px rgba(0, 0, 0, 0.03)`
 - Card surface (dark): `#141417`, border `rgba(255, 255, 255, 0.16)`, radius 16px, shadow `0 4px 12px rgba(0, 0, 0, 0.25)`
-- Spec card: `#0C0C0E`, border `rgba(255, 255, 255, 0.12)`, radius 16px
+- Pool averages footer: Light `#F8F9FA`, Dark `rgba(255, 255, 255, 0.02)`, border-top `rgba(0, 0, 0, 0.08)` / `rgba(255, 255, 255, 0.08)`
 
 ### Colors & Semantics
 - Accent Orange: `#FF7424` (hover `#E55A10`, tint `rgba(255, 116, 36, 0.12)`)
@@ -40,7 +40,7 @@ Reading this as: Quota and traffic governor dashboard for local AI gateway opera
 - Container: max-width 1240px, padding 8px 16px 10px 16px, height 100vh, overflow hidden.
 - Grid: 2 columns. 1000px to 1024px uses `1.0356fr 1fr`, above 1024px uses `1.28fr 1fr`. Gap 10px.
 - Left column: Antigravity Pool card.
-- Right column: Codex Pool card stacked above Technical Specification Card.
+- Right column: Codex Pool card.
 - Account list: internal vertical scroll (`overflow-y: auto`). Outer page does not scroll.
 
 ### 768px to 999px (Tablet Portrait / Narrow Landscape)
@@ -82,14 +82,13 @@ Reading this as: Quota and traffic governor dashboard for local AI gateway opera
 - More Quotas button: toggles extra windows (Sonnet/Opus, Claude/GPT Wk, GPT-OSS, Image).
 - Codex Windows: 5-Hour and Weekly columns.
 
-### Technical Specification Card
-- Dark card pinned under right column on desktop.
-- Four status indicators:
-  - Healthy (>20%): Standard Route (green)
-  - Low (<20%): Depletion Risk (amber)
-  - Depleted (0%): Paused (red)
-  - Streaming: Active Lock (orange)
-- Subtext: quota windows reset independently.
+### Pool Averages Footer
+- Pinned at bottom of each provider card beneath scrollable account list (`flex-shrink: 0`).
+- Semantic label: `Average remaining`.
+- Codex Windows: `5-Hour` and `Weekly` mean remaining percentage.
+- Antigravity Windows: `Flash / Pro` and `Weekly` mean remaining percentage.
+- Formatted with 1 decimal max (e.g. `82.5%`, `40%`); empty / null values display `—`.
+- Header Height Alignment: Desktop provider card headers equalized to 52px across columns.
 
 ## 5. Account Presentation & Privacy Rules
 
