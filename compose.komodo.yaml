@@ -6,7 +6,7 @@ services:
     container_name: quota-dashboard
     restart: unless-stopped
     ports:
-      - "127.0.0.1:20130:20130"
+      - "${BIND_IP:?set BIND_IP}:20130:20130"
     environment:
       NODE_ENV: production
       HOSTNAME: "0.0.0.0"

@@ -15,7 +15,7 @@ Deploy `quota-dashboard` as a Git-backed Stack managed by Komodo orchestrator.
 ## Prerequisites
 
 1. **Upstream 9router**: An upstream `9router` gateway instance reachable over HTTPS (defaults to `https://9router.bangkhan.com`). For local development, loopback HTTP (`http://127.0.0.1:20128`) is also permitted.
-2. **Reverse Proxy & TLS**: Komodo does not include an automatic reverse proxy. Public TLS termination for the dashboard must be handled by an external reverse proxy (Caddy, Nginx, or Traefik) on the host.
+2. **Reverse Proxy & TLS**: Komodo does not include an automatic reverse proxy. Public TLS termination for the dashboard must be handled by an external reverse proxy (Nginx Proxy Manager, Caddy, Nginx, or Traefik) on the same host or a dedicated reverse proxy host on the LAN.
 3. **DNS**: Public domain or subdomain (e.g. `quota.example.com`) pointing to the host's public IP.
 4. **Git Repository**: Project source pushed to a Git repository accessible by the Komodo Periphery agent.
 
@@ -49,12 +49,14 @@ Under the Stack **Environment** section, define:
 ```env
 APP_ORIGIN=https://quota.example.com
 UPSTREAM_BASE_URL=https://9router.bangkhan.com
+BIND_IP=172.16.32.91
 ```
 
 *(If using global variables: `APP_ORIGIN=[[QUOTA_APP_ORIGIN]]`)*
 
 **Configuration Notes**:
-- `APP_ORIGIN` (Required): Exact public origin (protocol + host, no trailing slash). Used for strict CSRF, Host header matching, and cookie flags.
+- `APP_ORIGIN` (Required): Exact public HTTPS origin (protocol + host, no trailing slash, e.g. `https://quota.example.com`). Used for strict CSRF, Host header matching, and secure cookie flags.
+- `BIND_IP` (Required): The host IP address on the Komodo server to which Docker publishes port `20130` (e.g. `172.16.32.91` for LAN access by an external reverse proxy, or `127.0.0.1` for a local reverse proxy on the same host). The container internally listens on `0.0.0.0:20130`, but Docker maps only to this specific host IP interface. **Never bind to `0.0.0.0` on the host.**
 - `UPSTREAM_BASE_URL` (Optional): Upstream `9router` gateway URL (defaults to `https://9router.bangkhan.com` if omitted). This is non-secret public configuration.
 - **Security Warning**: The dashboard login proxy transmits the operator password directly to `UPSTREAM_BASE_URL`. Only configure trusted, operator-owned `9router` origins over HTTPS. Plain HTTP is strictly rejected in production (only loopback HTTP like `http://127.0.0.1:20128` is permitted for development).
 - Do **not** set `SESSION_SECRET`: Sessions use in-memory crypto tokens.
@@ -62,18 +64,55 @@ UPSTREAM_BASE_URL=https://9router.bangkhan.com
 ### Step 4: Deploy and Verify
 
 1. Click **Deploy Stack**.
-2. Komodo clones the repository, builds the Docker image, and starts the container with published port `127.0.0.1:20130:20130`.
+2. Komodo clones the repository, builds the Docker image, and starts the container with published port `${BIND_IP}:20130:20130` (e.g. `172.16.32.91:20130:20130`).
 3. Verify in Komodo UI:
-   - Container status shows **Healthy** (verified by `/api/health`).
+   - Container status shows **Healthy** (verified inside container by `/api/health`).
    - Logs show `Listening on http://0.0.0.0:20130`.
 
 ---
 
 ## Reverse Proxy Configuration
 
-The container binds strictly to loopback `127.0.0.1:20130`. Configure your host reverse proxy to forward traffic and preserve Server-Sent Events (SSE).
+The container binds to `${BIND_IP}:20130` on the Komodo host. Configure your reverse proxy to forward traffic and preserve Server-Sent Events (SSE).
 
-### Caddy Example (`Caddyfile`)
+### Nginx Proxy Manager (NPM) on Dedicated LAN Host
+
+In setups where Nginx Proxy Manager runs on a separate host (e.g. `172.16.32.10`) from the Komodo host (e.g. `172.16.32.91`):
+
+> **Root Cause of 502 Bad Gateway**: If `compose.komodo.yaml` bound to `127.0.0.1`, port 20130 was only reachable locally on the Komodo machine. An external NPM host attempting to connect to `172.16.32.91:20130` was rejected with a connection refused / 502 error. Setting `BIND_IP=172.16.32.91` publishes port 20130 to the LAN interface reachable by NPM.
+
+In the Nginx Proxy Manager web interface:
+
+1. **Details Tab**:
+   - **Domain Names**: Enter your public domain (e.g. `quota.example.com` — must match `APP_ORIGIN` protocol and hostname exactly).
+   - **Scheme**: `http`
+   - **Forward Hostname / IP**: `172.16.32.91` (Komodo host IP)
+   - **Forward Port**: `20130`
+   - **Cache Assets**: Off
+   - **Block Common Exploits**: On
+   - **Websockets Support**: Optional / open for future (dashboard uses standard HTTP Server-Sent Events).
+
+2. **SSL Tab**:
+   - **SSL Certificate**: Select valid Let's Encrypt certificate.
+   - **Force SSL**: On
+   - **HTTP/2 Support**: On
+   - **HSTS Enabled**: On
+
+3. **Advanced Tab (Custom Nginx Configuration)**:
+   Add the following directives to prevent buffering on SSE streams (`/api/live-models`) and avoid client dropouts:
+   ```nginx
+   proxy_buffering off;
+   proxy_cache off;
+   proxy_read_timeout 3600s;
+   ```
+
+---
+
+### Local Reverse Proxy Examples (Same Host)
+
+If running a reverse proxy on the same host as Komodo with `BIND_IP=127.0.0.1`:
+
+#### Caddy Example (`Caddyfile`)
 
 ```caddyfile
 quota.example.com {
@@ -86,7 +125,7 @@ quota.example.com {
 }
 ```
 
-### Nginx Example
+#### Standard Nginx Example
 
 ```nginx
 server {
@@ -108,8 +147,8 @@ server {
         # SSE buffering settings for /api/live-models
         proxy_buffering off;
         proxy_cache off;
-        proxy_read_timeout 86400s;
-        proxy_send_timeout 86400s;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
     }
 }
 ```
@@ -128,7 +167,13 @@ server {
 
 ## Security & Operational Boundaries
 
-1. **Bridge Network with Loopback Port Mapping**: Container runs in default Docker bridge mode and maps `127.0.0.1:20130:20130`. The container cannot access other host services, and the dashboard is not exposed to public network interfaces directly without passing through the host reverse proxy.
-2. **Loopback Exposure**: Only loopback `127.0.0.1` binds on the host. External ingress must traverse the host reverse proxy with TLS and headers intact.
+1. **Bridge Network with Explicit IP Port Binding**: Container runs in default Docker bridge mode and publishes `${BIND_IP}:20130:20130`. The container listens on `0.0.0.0:20130` internally, but Docker maps only to the specified `BIND_IP` on the host. Never publish to `0.0.0.0` on the host.
+2. **Firewall Ingress Hardening (Strongly Recommended)**:
+   When binding to a LAN IP (e.g. `172.16.32.91`), configure firewall rules on the Komodo host to allow TCP port `20130` *only* from the reverse proxy host (`172.16.32.10`), denying all other LAN devices or public access:
+   ```bash
+   # Example UFW rules on Komodo host (172.16.32.91):
+   sudo ufw allow from 172.16.32.10 to any port 20130 proto tcp comment "Allow NPM reverse proxy only"
+   sudo ufw deny 20130/tcp comment "Block other ingress to quota dashboard"
+   ```
 3. **Session State**: Session tokens are held in-memory (up to 100 concurrent sessions, 8-hour TTL). Container restarts invalidate active sessions; operators must re-authenticate with the upstream gateway password.
-4. **Single Replica**: Exactly 1 replica. Do not scale replicas due to host loopback port binding and in-memory session pinning.
+4. **Single Replica**: Exactly 1 replica. Do not scale replicas due to host port binding and in-memory session pinning.
