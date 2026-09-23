@@ -3,6 +3,10 @@ import {
   jsonResponse,
   getCachedQuota,
   setCachedQuota,
+  getLastKnownGoodQuota,
+  recordTransientFailure,
+  clearCachedQuota,
+  allowForceQuotaRefresh,
   executeQuotaWithLimits,
   singleflightDirectoryRefresh,
 } from '../../../../lib/server/routeHelpers.js';
@@ -11,6 +15,7 @@ import { createErrorResponse } from '../../../../lib/server/errors.js';
 import { defaultUpstreamClient, readBoundedResponseText } from '../../../../lib/server/upstream.js';
 import { defaultSessionStore } from '../../../../lib/server/session.js';
 import { normalizeQuotaData } from '../../../../lib/server/normalize.js';
+import { LIMITS } from '../../../../lib/server/config.js';
 
 async function refreshDirectoryOnMiss(token, upstreamToken) {
   await singleflightDirectoryRefresh(token, async () => {
@@ -48,9 +53,13 @@ export async function GET(request, context) {
   if (errorResponse) return errorResponse;
 
   const url = new URL(request.url);
-  if (url.searchParams && Array.from(url.searchParams.keys()).length > 0) {
+  const searchKeys = Array.from(url.searchParams.keys());
+  const hasInvalidParams = searchKeys.some((k) => k !== 'force');
+  const forceParam = url.searchParams.get('force');
+  if (hasInvalidParams || (forceParam !== null && forceParam !== 'true' && forceParam !== '1')) {
     return createErrorResponse(400, 'INVALID_REQUEST');
   }
+  const isForce = forceParam === 'true' || forceParam === '1' || request.headers?.get?.('cache-control') === 'no-cache';
 
   const params = await context.params;
   const connectionId = params?.id;
@@ -59,7 +68,6 @@ export async function GET(request, context) {
     return createErrorResponse(400, 'INVALID_REQUEST');
   }
 
-  // Verify known directory membership with singleflight cooldown refresh
   if (!defaultSessionStore.isKnownAccount(token, connectionId)) {
     try {
       await refreshDirectoryOnMiss(token, session.upstreamToken);
@@ -67,12 +75,18 @@ export async function GET(request, context) {
       // Ignore directory refresh failure
     }
     if (!defaultSessionStore.isKnownAccount(token, connectionId)) {
+      clearCachedQuota(token, connectionId);
       return createErrorResponse(404, 'CONNECTION_NOT_FOUND');
     }
   }
 
+  const storedProvider = defaultSessionStore.getAccountProvider(token, connectionId);
   const cached = getCachedQuota(token, connectionId);
-  if (cached) {
+  const provider = storedProvider || cached?.provider;
+  if (isForce && !cached?.stale && (provider !== 'claude' || !cached) && !allowForceQuotaRefresh(token, connectionId)) {
+    return cached ? jsonResponse(cached) : createErrorResponse(429, 'RATE_LIMITED');
+  }
+  if (cached && (!isForce || provider === 'claude' || cached.stale)) {
     return jsonResponse(cached);
   }
 
@@ -82,22 +96,28 @@ export async function GET(request, context) {
       try {
         upstreamRes = await defaultUpstreamClient.request(
           `/api/usage/${encodeURIComponent(connectionId)}`,
-          { method: 'GET' },
+          { method: 'GET', timeoutMs: LIMITS.QUOTA_UPSTREAM_TIMEOUT_MS },
           session.upstreamToken
         );
       } catch (err) {
-        if (err.status === 404 || err.code === 'CONNECTION_NOT_FOUND') {
+        if (err.status === 404 || err.code === 'CONNECTION_NOT_FOUND' || err.status === 403 || err.status === 400) {
+          clearCachedQuota(token, connectionId);
           throw err;
         }
-        return normalizeQuotaData(connectionId, 'unknown', {
+        const lastGood = getLastKnownGoodQuota(token, connectionId);
+        if (lastGood) {
+          return recordTransientFailure(token, connectionId, lastGood);
+        }
+        return normalizeQuotaData(connectionId, storedProvider || 'unknown', {
           message: 'PROVIDER_UNAVAILABLE',
         });
       }
 
-      if (upstreamRes.status === 404) {
-        const err = new Error('Connection not found upstream');
-        err.status = 404;
-        err.code = 'CONNECTION_NOT_FOUND';
+      if (upstreamRes.status === 404 || upstreamRes.status === 403 || upstreamRes.status === 400) {
+        clearCachedQuota(token, connectionId);
+        const err = new Error(upstreamRes.status === 404 ? 'Connection not found upstream' : 'Upstream client error');
+        err.status = upstreamRes.status;
+        err.code = upstreamRes.status === 404 ? 'CONNECTION_NOT_FOUND' : (upstreamRes.status === 403 ? 'FORBIDDEN' : 'INVALID_REQUEST');
         throw err;
       }
 
@@ -109,7 +129,6 @@ export async function GET(request, context) {
         data = null;
       }
 
-      // Disambiguate quota 401: Provider expired vs 9Router dashboard session expired
       if (upstreamRes.status === 401) {
         const authCheck = await defaultUpstreamClient.revalidateAuthResult(session.upstreamToken);
         if (authCheck.status === 'unauthenticated') {
@@ -119,17 +138,39 @@ export async function GET(request, context) {
           err.code = 'SESSION_REQUIRED';
           throw err;
         }
+        clearCachedQuota(token, connectionId);
         return normalizeQuotaData(connectionId, data?.provider || 'unknown', {
           message: 'authentication expired',
         });
       }
 
-      const storedProvider = defaultSessionStore.getAccountProvider(token, connectionId);
       const provider = storedProvider || data?.provider || 'unknown';
-      return normalizeQuotaData(connectionId, provider, data);
+
+      if (upstreamRes.status >= 500) {
+        const lastGood = getLastKnownGoodQuota(token, connectionId);
+        if (lastGood) {
+          return recordTransientFailure(token, connectionId, lastGood);
+        }
+        return normalizeQuotaData(connectionId, provider, { message: 'PROVIDER_UNAVAILABLE' });
+      }
+
+      const norm = normalizeQuotaData(connectionId, provider, data);
+      if (norm.reason === 'PROVIDER_AUTH_REQUIRED') {
+        clearCachedQuota(token, connectionId);
+        return norm;
+      }
+      if (norm.status === 'unavailable' && norm.reason === 'PROVIDER_UNAVAILABLE') {
+        const lastGood = getLastKnownGoodQuota(token, connectionId);
+        if (lastGood) {
+          return recordTransientFailure(token, connectionId, lastGood);
+        }
+      }
+      return norm;
     });
 
-    setCachedQuota(token, connectionId, normalized);
+    if (normalized.status !== 'unavailable' && !normalized.stale && normalized.reason !== 'PROVIDER_AUTH_REQUIRED') {
+      setCachedQuota(token, connectionId, normalized);
+    }
     return jsonResponse(normalized);
   } catch (err) {
     const status = err.status || 500;
