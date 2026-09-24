@@ -104,11 +104,10 @@ export default function LiveModelsStrip({
 
         <div className="live-activity-center">
           <span className={`status-pill ${statusMeta.pillClass}`}>{statusMeta.text}</span>
-          <span>Live Stream Monitor</span>
         </div>
 
         <div className="live-activity-right">
-          <span>{totalCount} active request{totalCount === 1 ? '' : 's'}</span>
+          <span>{totalCount} active</span>
           <span
             className="live-strip-time tabular-nums"
             aria-label={
