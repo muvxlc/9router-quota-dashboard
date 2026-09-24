@@ -122,11 +122,17 @@
 }
 .pp-pool-avg-cell {
   display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 136px;
+  box-sizing: border-box;
+}
+.pp-pool-avg-header {
+  display: flex;
   align-items: baseline;
   justify-content: flex-end;
   gap: 6px;
-  width: 136px;
-  box-sizing: border-box;
+  width: 100%;
 }
 .pp-pool-avg-label {
   font-size: 11px;

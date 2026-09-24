@@ -148,6 +148,16 @@ export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProv
             {averages.map((avg) => {
               const label = getAverageLabel(avg);
               const formattedVal = formatAverageValue(avg);
+              const hasAvg = typeof avg?.average === 'number' && avg.count > 0;
+              const fillWidth = hasAvg ? Math.min(Math.max(avg.average, 0), 100) : 0;
+              const barColorClass = !hasAvg
+                ? ''
+                : avg.average === 0
+                  ? 'red'
+                  : avg.average < 20
+                    ? 'amber'
+                    : 'green';
+
               return (
                 <div
                   key={avg.key}
@@ -155,8 +165,16 @@ export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProv
                   title={`${label}: ${formattedVal} (${avg.count} accounts)`}
                   data-window={avg.key}
                 >
-                  <span className="pp-pool-avg-label">{label}</span>
-                  <span className="pp-pool-avg-value tabular-nums">{formattedVal}</span>
+                  <div className="pp-pool-avg-header">
+                    <span className="pp-pool-avg-label">{label}</span>
+                    <span className="pp-pool-avg-value tabular-nums">{formattedVal}</span>
+                  </div>
+                  <div className="pp-bar-track" aria-hidden="true">
+                    <div
+                      className={`pp-bar-fill ${barColorClass}`}
+                      style={{ width: `${fillWidth}%` }}
+                    />
+                  </div>
                 </div>
               );
             })}

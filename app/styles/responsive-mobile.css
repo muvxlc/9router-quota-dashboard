@@ -235,6 +235,8 @@
   }
   .pp-pool-avg-cell {
     width: auto;
+  }
+  .pp-pool-avg-header {
     justify-content: space-between;
   }
 

@@ -85,3 +85,24 @@ test('cards.css and responsive styles remove spec card and style pool-average fo
     'responsive-tablet.css desktop media query must retain min-height: 52px'
   );
 });
+
+test('QuotaTable.js renders separate progress bars below pool average percentage values', () => {
+  const quotaTableSrc = fs.readFileSync(path.join(projectRoot, 'app/components/QuotaTable.js'), 'utf8');
+  const cardsCss = fs.readFileSync(path.join(projectRoot, 'app/styles/cards.css'), 'utf8');
+
+  assert.ok(
+    quotaTableSrc.includes('pp-pool-averages'),
+    'QuotaTable.js must contain pp-pool-averages'
+  );
+  assert.match(
+    quotaTableSrc,
+    /pp-pool-avg-cell[\s\S]*?pp-bar-track[\s\S]*?pp-bar-fill/,
+    'QuotaTable.js must render pp-bar-track and pp-bar-fill inside each pool average cell'
+  );
+
+  assert.match(
+    cardsCss,
+    /\.pp-pool-avg-cell\s*\{[^}]*flex-direction:\s*column/s,
+    'cards.css must set flex-direction: column on .pp-pool-avg-cell'
+  );
+});
