@@ -11,11 +11,14 @@
   flex-shrink: 0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   width: 100%;
+  min-width: 0;
 }
 .live-activity-left {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 .live-beacon {
   display: inline-flex;
@@ -26,6 +29,7 @@
   color: var(--theme-dark);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  flex-shrink: 0;
 }
 [data-theme='dark'] .live-beacon {
   color: var(--theme-text-main);
@@ -51,7 +55,15 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.live-active-models {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: max-content;
 }
 .model-chip {
   display: inline-flex;
@@ -63,6 +75,7 @@
   border-radius: var(--radius-sm);
   font-size: 12px;
   color: var(--theme-text-main);
+  flex-shrink: 0;
 }
 .model-chip .acc-tag {
   background: var(--theme-dark);
@@ -95,6 +108,7 @@
   gap: 8px;
   font-size: 12px;
   color: var(--theme-text-muted);
+  flex-shrink: 0;
 }
 .live-activity-right {
   margin-left: auto;
@@ -105,6 +119,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 .live-more-btn {
   font-size: 12px;

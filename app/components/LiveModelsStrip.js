@@ -38,9 +38,6 @@ export default function LiveModelsStrip({
   }, [url, onSessionLoss, customSubscription]);
 
   const { status, activeModels, recentRequests = [], totalCount, receivedAt, connectedAt } = state;
-  const visibleModels = activeModels.slice(0, 3);
-  const remainingCount = activeModels.length - visibleModels.length;
-  const visibleRecent = recentRequests.slice(0, 3);
 
   const statusMeta = getLiveStatusMeta(status, totalCount);
 
@@ -62,28 +59,28 @@ export default function LiveModelsStrip({
 
           <div className="live-model-chips" role="list">
             {(status === 'live' || status === 'idle') ? (
-              (visibleModels.length === 0 && visibleRecent.length === 0) ? (
+              activeModels.length === 0 ? (
                 <span style={{ fontSize: 12, color: 'var(--theme-text-muted)' }}>
                   No active models in flight
                 </span>
               ) : (
                 <>
-                  {visibleModels.length > 0 && (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                  {activeModels.length > 0 && (
+                    <div className="live-active-models">
                       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--theme-text-muted)', textTransform: 'uppercase' }}>
                         Active
                       </span>
-                      {visibleModels.map((item, idx) => (
+                      {activeModels.map((item, idx) => (
                         <div
                           key={`active-${item.model}-${item.provider}-${idx}`}
                           className="model-chip"
                           role="listitem"
                           title={`${item.model} (${item.provider}): ${item.count} in flight`}
                         >
-                          <span>{item.model}</span>
+                          <span>{item.model === 'gemini-3.8-flash-high' ? 'Gemini 3.8 Flash' : item.model}</span>
                           {(item.account || item.provider) && (
                             <span className="acc-tag">
-                              {item.account ? maskEmail(item.account).split('@')[0] : item.provider}
+                              {item.account ? maskEmail(item.account).split('@')[0] : item.provider === 'antigravity' ? 'agy' : item.provider}
                             </span>
                           )}
                           {item.count > 1 && (
@@ -91,52 +88,11 @@ export default function LiveModelsStrip({
                           )}
                         </div>
                       ))}
-                      {remainingCount > 0 && (
-                        <button
-                          type="button"
-                          className="live-more-btn"
-                          onClick={() => setShowModal(true)}
-                          aria-label={`View ${remainingCount} more active models`}
-                        >
-                          +{remainingCount} more
-                        </button>
-                      )}
-                    </div>
-                  )}
 
-                  {visibleRecent.length > 0 && (
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--theme-text-muted)', textTransform: 'uppercase' }}>
-                        Recently completed
-                      </span>
-                      {visibleRecent.map((item, idx) => (
-                        <div
-                          key={`recent-${item.model}-${item.provider}-${idx}`}
-                          className="model-chip"
-                          role="listitem"
-                          title={`${item.model} (${item.provider})${item.status ? ` - ${item.status}` : ''}`}
-                        >
-                          <span>{item.model}</span>
-                          {(item.account || item.provider) && (
-                            <span className="acc-tag">
-                              {item.account ? maskEmail(item.account).split('@')[0] : item.provider}
-                            </span>
-                          )}
-                          <span
-                            style={{
-                              fontSize: 10,
-                              fontWeight: 600,
-                              textTransform: 'uppercase',
-                              color: item.status === 'error' ? 'var(--theme-red)' : 'var(--theme-text-muted)',
-                            }}
-                          >
-                            {item.status || 'done'}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
+                      </div>
+                    )}
+                  </>
+
               )
             ) : (
               <span style={{ fontSize: 12, color: 'var(--theme-text-muted)' }}>

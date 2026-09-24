@@ -21,22 +21,25 @@ test('LiveModelsStrip.js defines recentRequests state and passes it to modal', (
   );
 });
 
-test('LiveModelsStrip.js renders distinct Active and Recently completed labeled sections', () => {
+test('LiveModelsStrip shows every active model and keeps recent history in modal', () => {
   const stripSrc = fs.readFileSync(path.join(projectRoot, 'app/components/LiveModelsStrip.js'), 'utf8');
+  assert.match(stripSrc, /activeModels\.map\(/);
+  assert.doesNotMatch(stripSrc, /activeModels\.slice\(/);
+  assert.doesNotMatch(stripSrc, /visibleRecent|Recently completed/);
+  assert.match(stripSrc, /recentRequests=\{recentRequests\}/);
+});
 
-  assert.ok(
-    stripSrc.includes('Active'),
-    'LiveModelsStrip must render distinct "Active" label for active models'
-  );
-  assert.ok(
-    stripSrc.includes('Recently completed'),
-    'LiveModelsStrip must render distinct "Recently completed" label for recent models'
-  );
-  assert.match(
-    stripSrc,
-    /recentRequests\.slice\(0,\s*3\)/,
-    'LiveModelsStrip must cap displayed recently completed items to maximum 3'
-  );
+test('LiveModelsStrip shortens labels without changing source identifiers', () => {
+  const stripSrc = fs.readFileSync(path.join(projectRoot, 'app/components/LiveModelsStrip.js'), 'utf8');
+  assert.match(stripSrc, /antigravity.*agy/);
+  assert.match(stripSrc, /gemini-3\.8-flash-high.*Gemini 3\.8 Flash/);
+  assert.match(stripSrc, /title=\{`\$\{item\.model\}/);
+});
+
+test('Live Models strip bounds overflowing chips inside its container', () => {
+  const css = fs.readFileSync(path.join(projectRoot, 'app/styles/live-strip.css'), 'utf8');
+  assert.match(css, /\.live-activity-left\s*\{[^}]*min-width:\s*0/s);
+  assert.match(css, /\.live-model-chips\s*\{[^}]*overflow-x:\s*auto/s);
 });
 
 test('LiveModelsStrip.js enables modal button when only recent requests exist', () => {
