@@ -104,12 +104,10 @@ test('sanitizeLiveModels strips all secret, cost, token, and unapproved fields',
 
   const sanitized = sanitizeLiveModels(dirtyPayload);
 
-  // Must only have activeModels and receivedAt
-  assert.deepEqual(Object.keys(sanitized).sort(), ['activeModels', 'receivedAt']);
+  assert.deepEqual(Object.keys(sanitized).sort(), ['activeModels', 'receivedAt', 'recentRequests']);
   assert.equal(typeof sanitized.receivedAt, 'string');
   assert.ok(!Number.isNaN(new Date(sanitized.receivedAt).getTime()));
 
-  // Active models content
   assert.equal(sanitized.activeModels.length, 2);
   assert.deepEqual(sanitized.activeModels[0], {
     model: 'claude-3-7-sonnet',
@@ -124,19 +122,74 @@ test('sanitizeLiveModels strips all secret, cost, token, and unapproved fields',
     count: 3,
   });
 
-  // Zero-count and empty models omitted
   assert.ok(!sanitized.activeModels.some((m) => m.model === 'invalid-zero-count'));
   assert.ok(!sanitized.activeModels.some((m) => m.model === ''));
 
-  // Ensure no forbidden keys anywhere in stringified output
   const str = JSON.stringify(sanitized);
   assert.ok(!str.includes('totalRequests'));
   assert.ok(!str.includes('totalCost'));
   assert.ok(!str.includes('totalPromptTokens'));
-  assert.ok(!str.includes('recentRequests'));
+  assert.ok(!str.includes('prompt_tokens'));
   assert.ok(!str.includes('errorProvider'));
   assert.ok(!str.includes('developer@company.com'));
   assert.ok(!str.includes('sk-secret'));
+});
+
+test('sanitizeLiveModels whitelists and bounds recentRequests to max 3 items with safe fields only', () => {
+  const payload = {
+    activeRequests: [],
+    recentRequests: [
+      {
+        model: 'claude-3-5-sonnet',
+        provider: 'anthropic',
+        status: 'ok',
+        timestamp: '2026-09-24T01:00:00.000Z',
+        account: 'dev@company.com',
+        promptTokens: 1200,
+        completionTokens: 300,
+        cost: 0.02,
+        apiKey: 'sk-12345678',
+      },
+      {
+        model: 'gpt-4o',
+        provider: 'openai',
+        status: 'ok',
+        timestamp: '2026-09-24T01:01:00.000Z',
+      },
+      {
+        model: 'gemini-2.0-flash',
+        provider: 'antigravity',
+        status: 'error',
+        timestamp: '2026-09-24T01:02:00.000Z',
+      },
+      {
+        model: 'overflow-model-should-be-dropped',
+        provider: 'extra',
+        status: 'ok',
+        timestamp: '2026-09-24T01:03:00.000Z',
+      },
+    ],
+  };
+
+  const sanitized = sanitizeLiveModels(payload);
+  assert.equal(sanitized.recentRequests.length, 3);
+  assert.deepEqual(sanitized.recentRequests[0], {
+    model: 'claude-3-5-sonnet',
+    provider: 'anthropic',
+    status: 'ok',
+    timestamp: '2026-09-24T01:00:00.000Z',
+    account: 'de***@company.com',
+  });
+  assert.equal(sanitized.recentRequests[1].model, 'gpt-4o');
+  assert.equal(sanitized.recentRequests[2].model, 'gemini-2.0-flash');
+  assert.equal(sanitized.recentRequests[2].status, 'error');
+  assert.ok(!sanitized.recentRequests.some((r) => r.model === 'overflow-model-should-be-dropped'));
+
+  const str = JSON.stringify(sanitized);
+  assert.ok(!str.includes('promptTokens'));
+  assert.ok(!str.includes('completionTokens'));
+  assert.ok(!str.includes('sk-12345678'));
+  assert.ok(!str.includes('dev@company.com'));
 });
 
 test('sanitizeLiveModels handles null, undefined, empty, or malformed input safely', () => {
@@ -282,7 +335,7 @@ test('GET /api/live-models connects upstream SSE, sets correct headers, and stre
     assert.ok(text.includes('claude-3-5-sonnet'));
     assert.ok(text.includes('de***@test.com'));
     assert.ok(!text.includes('totalCost'));
-    assert.ok(!text.includes('recentRequests'));
+    assert.ok(!text.includes('secret'));
     assert.ok(!text.includes('dev@test.com'));
   } finally {
     defaultUpstreamClient.request = originalRequest;

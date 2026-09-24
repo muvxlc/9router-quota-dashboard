@@ -244,3 +244,67 @@ test('createLiveModelsSubscription preserves session on 503 probe error and clea
 
   sub.unsubscribe();
 });
+
+test('createLiveModelsSubscription ingests recentRequests, caps at 3, and clears on disconnect and auth loss', async () => {
+  MockEventSource.instances = [];
+  const stateUpdates = [];
+  let sessionLost = false;
+
+  const sub = createLiveModelsSubscription({
+    url: '/api/live-models',
+    EventSourceClass: MockEventSource,
+    onSessionLoss: () => { sessionLost = true; },
+    onUpdate: (state) => stateUpdates.push(state),
+  });
+
+  const es = MockEventSource.instances[0];
+  es.simulateOpen();
+
+  es.simulateMessage({
+    activeModels: [{ model: 'claude-3-5-sonnet', provider: 'codex', count: 1 }],
+    recentRequests: [
+      { model: 'gemini-2.0-flash', provider: 'antigravity', status: 'ok', timestamp: '2026-09-24T01:00:00.000Z' },
+      { model: 'gpt-4o', provider: 'openai', status: 'ok', timestamp: '2026-09-24T00:59:00.000Z' },
+    ],
+  });
+
+  const state1 = stateUpdates[stateUpdates.length - 1];
+  assert.equal(state1.status, 'live');
+  assert.equal(state1.totalCount, 1);
+  assert.equal(state1.activeModels.length, 1);
+  assert.equal(state1.recentRequests.length, 2);
+  assert.equal(state1.recentRequests[0].model, 'gemini-2.0-flash');
+
+  es.simulateMessage({
+    activeModels: [],
+    recentRequests: [
+      { model: 'claude-3-5-sonnet', provider: 'codex', status: 'ok', timestamp: '2026-09-24T01:01:00.000Z' },
+      { model: 'gemini-2.0-flash', provider: 'antigravity', status: 'ok', timestamp: '2026-09-24T01:00:00.000Z' },
+      { model: 'gpt-4o', provider: 'openai', status: 'ok', timestamp: '2026-09-24T00:59:00.000Z' },
+      { model: 'extra-drop', provider: 'other', status: 'ok', timestamp: '2026-09-24T00:58:00.000Z' },
+    ],
+  });
+
+  const state2 = stateUpdates[stateUpdates.length - 1];
+  assert.equal(state2.status, 'idle');
+  assert.equal(state2.totalCount, 0);
+  assert.equal(state2.activeModels.length, 0);
+  assert.equal(state2.recentRequests.length, 3);
+  assert.equal(state2.recentRequests[0].model, 'claude-3-5-sonnet');
+  assert.ok(!state2.recentRequests.some((r) => r.model === 'extra-drop'));
+
+  es.simulateError(new Error('Network drop'));
+  const state3 = stateUpdates[stateUpdates.length - 1];
+  assert.equal(state3.status, 'error');
+  assert.equal(state3.recentRequests.length, 0);
+  assert.equal(state3.activeModels.length, 0);
+
+  es.simulateMessage({ status: 'unauthenticated' });
+  const state4 = stateUpdates[stateUpdates.length - 1];
+  assert.equal(state4.status, 'unauthenticated');
+  assert.equal(state4.recentRequests.length, 0);
+  assert.equal(state4.activeModels.length, 0);
+  assert.equal(sessionLost, true);
+
+  sub.unsubscribe();
+});

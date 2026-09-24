@@ -18,6 +18,7 @@ export default function LiveModelsStrip({
   const [state, setState] = useState({
     status: 'connecting',
     activeModels: [],
+    recentRequests: [],
     totalCount: 0,
     receivedAt: null,
     connectedAt: null,
@@ -36,9 +37,10 @@ export default function LiveModelsStrip({
     return () => sub.unsubscribe();
   }, [url, onSessionLoss, customSubscription]);
 
-  const { status, activeModels, totalCount, receivedAt, connectedAt } = state;
+  const { status, activeModels, recentRequests = [], totalCount, receivedAt, connectedAt } = state;
   const visibleModels = activeModels.slice(0, 3);
   const remainingCount = activeModels.length - visibleModels.length;
+  const visibleRecent = recentRequests.slice(0, 3);
 
   const statusMeta = getLiveStatusMeta(status, totalCount);
 
@@ -59,40 +61,87 @@ export default function LiveModelsStrip({
           </div>
 
           <div className="live-model-chips" role="list">
-            {status === 'live' && visibleModels.length > 0 ? (
-              visibleModels.map((item, idx) => (
-                <div
-                  key={`${item.model}-${item.provider}-${idx}`}
-                  className="model-chip"
-                  role="listitem"
-                  title={`${item.model} (${item.provider}): ${item.count} in flight`}
-                >
-                  <span>{item.model}</span>
-                  {(item.account || item.provider) && (
-                    <span className="acc-tag">
-                      {item.account ? maskEmail(item.account).split('@')[0] : item.provider}
-                    </span>
+            {(status === 'live' || status === 'idle') ? (
+              (visibleModels.length === 0 && visibleRecent.length === 0) ? (
+                <span style={{ fontSize: 12, color: 'var(--theme-text-muted)' }}>
+                  No active models in flight
+                </span>
+              ) : (
+                <>
+                  {visibleModels.length > 0 && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--theme-text-muted)', textTransform: 'uppercase' }}>
+                        Active
+                      </span>
+                      {visibleModels.map((item, idx) => (
+                        <div
+                          key={`active-${item.model}-${item.provider}-${idx}`}
+                          className="model-chip"
+                          role="listitem"
+                          title={`${item.model} (${item.provider}): ${item.count} in flight`}
+                        >
+                          <span>{item.model}</span>
+                          {(item.account || item.provider) && (
+                            <span className="acc-tag">
+                              {item.account ? maskEmail(item.account).split('@')[0] : item.provider}
+                            </span>
+                          )}
+                          {item.count > 1 && (
+                            <span className="live-model-count tabular-nums">{item.count}</span>
+                          )}
+                        </div>
+                      ))}
+                      {remainingCount > 0 && (
+                        <button
+                          type="button"
+                          className="live-more-btn"
+                          onClick={() => setShowModal(true)}
+                          aria-label={`View ${remainingCount} more active models`}
+                        >
+                          +{remainingCount} more
+                        </button>
+                      )}
+                    </div>
                   )}
-                  {item.count > 1 && (
-                    <span className="live-model-count tabular-nums">{item.count}</span>
+
+                  {visibleRecent.length > 0 && (
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--theme-text-muted)', textTransform: 'uppercase' }}>
+                        Recently completed
+                      </span>
+                      {visibleRecent.map((item, idx) => (
+                        <div
+                          key={`recent-${item.model}-${item.provider}-${idx}`}
+                          className="model-chip"
+                          role="listitem"
+                          title={`${item.model} (${item.provider})${item.status ? ` - ${item.status}` : ''}`}
+                        >
+                          <span>{item.model}</span>
+                          {(item.account || item.provider) && (
+                            <span className="acc-tag">
+                              {item.account ? maskEmail(item.account).split('@')[0] : item.provider}
+                            </span>
+                          )}
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              color: item.status === 'error' ? 'var(--theme-red)' : 'var(--theme-text-muted)',
+                            }}
+                          >
+                            {item.status || 'done'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                </div>
-              ))
+                </>
+              )
             ) : (
               <span style={{ fontSize: 12, color: 'var(--theme-text-muted)' }}>
-                {status === 'live' ? 'No active models in flight' : formatLiveStatusLabel(status)}
+                {formatLiveStatusLabel(status)}
               </span>
-            )}
-
-            {remainingCount > 0 && (
-              <button
-                type="button"
-                className="live-more-btn"
-                onClick={() => setShowModal(true)}
-                aria-label={`View ${remainingCount} more active models`}
-              >
-                +{remainingCount} more
-              </button>
             )}
           </div>
         </div>
@@ -114,12 +163,12 @@ export default function LiveModelsStrip({
           >
             {formatLiveTimestamp(receivedAt, { status, connectedAt })}
           </span>
-          {activeModels.length > 0 && (
+          {(activeModels.length > 0 || recentRequests.length > 0) && (
             <button
               type="button"
               className="live-view-all-btn"
               onClick={() => setShowModal(true)}
-              aria-label="View all active model requests"
+              aria-label="View all model requests"
             >
               View all ↗
             </button>
@@ -130,6 +179,7 @@ export default function LiveModelsStrip({
       {showModal && (
         <LiveModelsModal
           activeModels={activeModels}
+          recentRequests={recentRequests}
           totalCount={totalCount}
           status={status}
           receivedAt={receivedAt}
