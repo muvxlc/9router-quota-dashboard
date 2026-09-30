@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import QuotaTable from '../components/QuotaTable.js';
 
 const HOUR = 3600_000;
@@ -79,14 +79,17 @@ const SCENARIOS = {
   },
 };
 
+const emptySubscribe = () => () => {};
+
 export default function LayoutPreviewPage() {
-  const [scenario, setScenario] = useState(null);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+  const [scenario, setScenario] = useState('current');
 
-  useEffect(() => {
-    setScenario('current');
-  }, []);
-
-  if (!scenario) {
+  if (!mounted) {
     return <main />;
   }
 
