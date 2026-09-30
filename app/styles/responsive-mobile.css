@@ -17,7 +17,10 @@
     grid-template-columns: 1fr;
     gap: 12px;
   }
-  .codex-panel-wrap {
+  .pool-col-stack {
+    height: auto;
+  }
+  .pool-col-stack .pp-card {
     flex: 0 0 auto;
   }
   .pp-columns-legend {

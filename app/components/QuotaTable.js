@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useMemo, useRef, useState } from 'react';
 import StatusPill from './StatusPill.js';
 import QuotaWindowCell from './QuotaWindowCell.js';
 import { getProviderQuotaAverages } from '../../lib/client/selectors.js';
+import { computePoolColumns, getGroupWeight } from '../../lib/client/poolLayout.js';
 
 function getAverageLabel(avg) {
   if (avg.key === 'gemini') return 'Flash / Pro';
@@ -20,7 +22,27 @@ function formatAverageValue(avg) {
 }
 
 export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProvider }) {
-  if (!groups || groups.length === 0) {
+  const gridRef = useRef(null);
+  const [gridWidth, setGridWidth] = useState(0);
+  const hasGroups = Array.isArray(groups) && groups.length > 0;
+
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[entries.length - 1];
+      if (entry) setGridWidth(entry.contentRect.width);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasGroups]);
+
+  const layout = useMemo(
+    () => computePoolColumns(groups, gridWidth),
+    [groups, gridWidth]
+  );
+
+  if (!hasGroups) {
     return (
       <div className="pp-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
         <p style={{ fontSize: 15, color: 'var(--theme-text-muted)' }}>
@@ -30,15 +52,16 @@ export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProv
     );
   }
 
-  const renderGroupCard = (group, isRightCol = false) => {
+  const renderGroupCard = (group) => {
     const { provider, providerTitle, accounts, windows, extraWindowsCount, isExpanded } = group;
     const averages = getProviderQuotaAverages(group);
 
     return (
       <section
         key={provider}
-        className={`pp-card ${isRightCol ? 'codex-panel-wrap' : ''}`}
+        className="pp-card pool-card"
         aria-labelledby={`group-${provider}`}
+        style={{ '--card-flex-grow': getGroupWeight(group) }}
       >
         <div className="pp-card-header">
           <div className="pp-card-title-group">
@@ -184,18 +207,19 @@ export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProv
     );
   };
 
-  const leftGroup = groups[0];
-  const rightGroups = groups.slice(1);
+  const columns = layout.columns;
 
   return (
-    <div className="dashboard-main-grid">
-      {/* Left Column Card */}
-      {leftGroup && renderGroupCard(leftGroup, false)}
-
-      {/* Right Column Stack */}
-      <div className="right-col-stack">
-        {rightGroups.map((g) => renderGroupCard(g, true))}
-      </div>
+    <div
+      className="dashboard-main-grid"
+      ref={gridRef}
+      style={{ '--pool-cols': layout.template }}
+    >
+      {columns.map((column) => (
+        <div className="pool-col-stack" key={column.key}>
+          {column.groups.map((group) => renderGroupCard(group))}
+        </div>
+      ))}
     </div>
   );
 }

@@ -31,8 +31,13 @@ test('QuotaTable.js removes entire QUOTA PROTOCOL SPECIFICATION / TELEMETRY bloc
     'pp-spec-card container must be removed from QuotaTable.js'
   );
   assert.ok(
-    quotaTableSrc.includes('right-col-stack'),
-    'right-col-stack wrapper must be retained for right column layout'
+    quotaTableSrc.includes('pool-col-stack'),
+    'pool-col-stack wrapper must be retained for auto column layout'
+  );
+  assert.match(
+    quotaTableSrc,
+    /import\s*\{[^}]*computePoolColumns[^}]*\}\s*from\s*['"].*lib\/client\/poolLayout(\.js)?['"]/,
+    'QuotaTable.js must compute its column layout from poolLayout.js'
   );
 });
 
