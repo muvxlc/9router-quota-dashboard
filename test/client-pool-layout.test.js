@@ -62,34 +62,18 @@ test('current pools: antigravity gets its own column, codex and glm share one', 
   );
 });
 
-test('column template ratio is capped and dense column is wider', () => {
+test('columns are equal width regardless of pool weight', () => {
   const result = computePoolColumns(
     [group('codex', 4), group('antigravity', 14), group('glm', 1)],
     1440
   );
-  const parts = result.template.split(' ').map((p) => Number(p.replace('fr', '')));
-  assert.equal(parts.length, 2);
-  assert.equal(parts[0], 1, 'sparse column is the 1fr baseline');
-  assert.ok(parts[1] > 1 && parts[1] <= 1.75, `dense column ratio within cap: ${parts[1]}`);
-});
+  assert.equal(result.template, '1fr 1fr');
 
-test('ratio squeeze falls back to equal columns when the sparsest would get too narrow', () => {
-  const pools = [group('codex', 4), group('antigravity', 14), group('glm', 1), group('claude', 8)];
-
-  const squeezed = computePoolColumns(pools, 1688);
-  assert.equal(squeezed.columnCount, 3);
-  assert.equal(
-    squeezed.template,
-    '1fr 1fr 1fr',
-    `expected equal columns at 1688px, got ${squeezed.template}`
+  const unbalanced = computePoolColumns(
+    [group('codex', 2), group('antigravity', 30)],
+    1440
   );
-
-  const roomy = computePoolColumns(pools, 2200);
-  assert.equal(roomy.columnCount, 3);
-  assert.notEqual(roomy.template, '1fr 1fr 1fr', 'ratio sizing returns once width allows it');
-  const parts = roomy.template.split(' ').map((p) => Number(p.replace('fr', '')));
-  assert.equal(parts[0], 1);
-  assert.ok(parts[1] > 1 && parts[1] <= 1.75);
+  assert.equal(unbalanced.template, '1fr 1fr');
 });
 
 test('single pool renders a single full-width column', () => {
@@ -106,7 +90,7 @@ test('a fourth pool on a wide screen rebalances into three columns', () => {
 
   assert.equal(result.columnCount, 3);
   assert.deepEqual(flatten(result.columns).sort(), ['antigravity', 'claude', 'codex', 'glm']);
-  assert.equal(result.template.split(' ').length, 3);
+  assert.equal(result.template, '1fr 1fr 1fr');
 
   const weights = result.columns.map((c) => c.weight);
   const spread = Math.max(...weights) - Math.min(...weights);
