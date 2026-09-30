@@ -26,11 +26,20 @@ export default function Header({
   onSortChange,
   onResetFilters,
   accountsCount = 0,
+  cadence = 'off',
+  onCadenceChange,
+  notificationPermission = 'default',
+  onRequestNotificationPermission,
+  activeAlertsCount = 0,
+  onExportCsv,
+  onExportJson,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const menuRef = useRef(null);
   const filtersRef = useRef(null);
+  const exportRef = useRef(null);
 
   const syncLabel = lastSyncAt
     ? `Updated ${new Date(lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}`
@@ -46,11 +55,15 @@ export default function Header({
       if (filtersRef.current && !filtersRef.current.contains(e.target)) {
         setFiltersOpen(false);
       }
+      if (exportRef.current && !exportRef.current.contains(e.target)) {
+        setExportOpen(false);
+      }
     };
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setMenuOpen(false);
         setFiltersOpen(false);
+        setExportOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -189,6 +202,124 @@ export default function Header({
               </div>
             </>
           )}
+
+          {/* Cadence Selector */}
+          <div className="cadence-select-wrap" style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <select
+              className="cadence-select"
+              value={cadence}
+              onChange={(e) => onCadenceChange?.(e.target.value)}
+              aria-label="Auto-refresh interval"
+              data-testid="cadence-selector"
+              style={{
+                padding: '4px 8px',
+                fontSize: 12,
+                background: 'var(--theme-canvas-subtle)',
+                color: 'var(--theme-text)',
+                border: '1px solid var(--theme-border)',
+                borderRadius: 'var(--radius-sm, 4px)',
+                cursor: 'pointer',
+              }}
+            >
+              <option value="off">Sync: Off</option>
+              <option value="15s">Sync: 15s</option>
+              <option value="30s">Sync: 30s</option>
+              <option value="60s">Sync: 60s</option>
+              <option value="5m">Sync: 5m</option>
+            </select>
+          </div>
+
+          {/* Web Notification Alerts Chip */}
+          <button
+            type="button"
+            className={`notification-toggle-btn ${notificationPermission === 'granted' ? 'is-granted' : ''}`}
+            onClick={onRequestNotificationPermission}
+            title={`Notifications: ${notificationPermission}`}
+            aria-label={`Web notifications ${notificationPermission}`}
+            data-testid="notification-permission-btn"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '4px 8px',
+              fontSize: 12,
+              background: 'var(--theme-canvas-subtle)',
+              color: notificationPermission === 'granted' ? 'var(--theme-green)' : notificationPermission === 'denied' ? 'var(--theme-red)' : 'var(--theme-text-muted)',
+              border: '1px solid var(--theme-border)',
+              borderRadius: 'var(--radius-sm, 4px)',
+              cursor: notificationPermission === 'granted' ? 'default' : 'pointer',
+            }}
+          >
+            <span>{notificationPermission === 'granted' ? '🔔 Alerts On' : notificationPermission === 'denied' ? '🔕 Alerts Off' : '🔔 Alerts'}</span>
+            {activeAlertsCount > 0 && (
+              <span
+                className="filter-count-badge"
+                style={{ backgroundColor: 'var(--theme-red)', color: '#fff', marginLeft: 2 }}
+                data-testid="alerts-count-badge"
+              >
+                {activeAlertsCount}
+              </span>
+            )}
+          </button>
+
+          {/* Export Dropdown */}
+          <div style={{ position: 'relative' }} ref={exportRef}>
+            <button
+              type="button"
+              className="export-toggle-btn"
+              onClick={() => setExportOpen((prev) => !prev)}
+              aria-haspopup="menu"
+              aria-expanded={exportOpen}
+              title="Export snapshot"
+              data-testid="export-dropdown-btn"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '4px 8px',
+                fontSize: 12,
+                background: 'var(--theme-canvas-subtle)',
+                color: 'var(--theme-text)',
+                border: '1px solid var(--theme-border)',
+                borderRadius: 'var(--radius-sm, 4px)',
+                cursor: 'pointer',
+              }}
+            >
+              <span>Export ▾</span>
+            </button>
+            {exportOpen && (
+              <div
+                role="menu"
+                className="app-popover-menu"
+                style={{ minWidth: 120, right: 0, top: 'calc(100% + 4px)', position: 'absolute', zIndex: 50 }}
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setExportOpen(false);
+                    onExportCsv?.();
+                  }}
+                  className="app-menu-item"
+                  data-testid="export-csv-btn"
+                >
+                  Export CSV
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setExportOpen(false);
+                    onExportJson?.();
+                  }}
+                  className="app-menu-item"
+                  data-testid="export-json-btn"
+                >
+                  Export JSON
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Primary Refresh CTA */}
           <button

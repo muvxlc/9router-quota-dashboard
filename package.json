@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "eslint": "^9.0.0",
-    "eslint-config-next": "16.1.6"
+    "eslint-config-next": "16.1.6",
+    "happy-dom": "^20.14.5"
   }
 }

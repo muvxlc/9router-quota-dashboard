@@ -1,6 +1,6 @@
 'use client';
 
-import { formatPercent, formatResetRelative, formatExactDate } from '../../lib/client/selectors.js';
+import { formatPercent, computeResetCountdown, formatExactDate, useCentralClock } from '../../lib/client/selectors.js';
 
 function formatCompactNumber(num) {
   if (num === null || num === undefined) return '';
@@ -22,6 +22,8 @@ function formatCompactUsageText(used, total) {
 }
 
 export default function QuotaWindowCell({ windowData }) {
+  const nowMs = useCentralClock();
+
   if (!windowData) {
     return (
       <div className="pp-quota-cell">
@@ -37,7 +39,8 @@ export default function QuotaWindowCell({ windowData }) {
 
   const { remainingPercent, used, total, resetAt, unlimited } = windowData;
   const pctStr = formatPercent(remainingPercent, unlimited);
-  const rawResetRel = formatResetRelative(resetAt);
+  const countdown = computeResetCountdown(resetAt, nowMs, { unlimited });
+  const rawResetRel = countdown.text;
   const resetStr = rawResetRel ? rawResetRel.replace(/^in\s+/, '') : '—';
   const usageStr = formatCompactUsageText(used, total);
   const exactDateStr = formatExactDate(resetAt);

@@ -53,7 +53,17 @@ export async function GET(request) {
   }
 
   const rawConnections = Array.isArray(data?.connections) ? data.connections : [];
-  const connections = rawConnections.map(normalizeConnection);
+  const overrides = defaultSessionStore.getConnectionOverrides(token);
+  const connections = rawConnections.map(normalizeConnection).map((conn) => {
+    if (overrides[conn.id]) {
+      return {
+        ...conn,
+        ...overrides[conn.id],
+        isOverride: true,
+      };
+    }
+    return conn;
+  });
   const providerOptions = Array.isArray(data?.providerOptions) ? data.providerOptions : [];
 
   defaultSessionStore.addKnownAccounts(token, connections);

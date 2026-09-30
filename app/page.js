@@ -7,11 +7,18 @@ import QuotaTable from './components/QuotaTable.js';
 import UsageView from './components/UsageView.js';
 import DetailSheet from './components/DetailSheet.js';
 import LoginModal from './components/LoginModal.js';
-import { fetchAuthStatus, loginWithPassword, logout, SessionExpiredError } from '../lib/client/api.js';
+import { fetchAuthStatus, loginWithPassword, logout, SessionExpiredError, toggleConnectionGovernor } from '../lib/client/api.js';
 import { groupAccountsByProvider, filterAndSortAccounts, buildAccountPresentation, maskEmail, deriveAccountStatus, getAccountEffectiveRemainingPct } from '../lib/client/selectors.js';
 import { useTheme } from '../lib/client/useTheme.js';
 import { useQuotaData } from '../lib/client/useQuotaData.js';
 import { useStatsData } from '../lib/client/useStatsData.js';
+import { useAutoRefresh } from '../lib/client/useAutoRefresh.js';
+import {
+  checkAccountsForAlerts,
+  requestNotificationPermission,
+  getNotificationPermission,
+} from '../lib/client/alerts.js';
+import { exportCsv, exportJson } from '../lib/client/exportSnapshot.js';
 
 export default function DashboardPage() {
   const [auth, setAuth] = useState({ authenticated: false, loginMode: 'password', checking: true });
@@ -29,14 +36,54 @@ export default function DashboardPage() {
   const [sortOrder, setSortOrder] = useState('asc');
   const [expandedProviders, setExpandedProviders] = useState({});
 
-  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [selectedAccountId, setSelectedAccountId] = useState(null);
   const authMountAbortRef = useRef(null);
+  const alertedIncidentsRef = useRef(new Map());
+
+  const [cadence, setCadence] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('quota_refresh_interval');
+      if (saved && ['off', '15s', '30s', '60s', '5m'].includes(saved)) {
+        return saved;
+      }
+    }
+    return 'off';
+  });
+
+  const [notificationPermission, setNotificationPermission] = useState(() => {
+    return getNotificationPermission();
+  });
+
+  const handleCadenceChange = (val) => {
+    setCadence(val);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('quota_refresh_interval', val);
+    }
+  };
+
+  const handleRequestNotificationPermission = async () => {
+    const perm = await requestNotificationPermission();
+    setNotificationPermission(perm);
+  };
+
+  const intervalSec = useMemo(() => {
+    switch (cadence) {
+      case '15s': return 15;
+      case '30s': return 30;
+      case '60s': return 60;
+      case '5m': return 300;
+      default: return 0;
+    }
+  }, [cadence]);
 
   const {
     connections,
+    setConnections,
     quotas,
     refreshing,
     lastSyncAt,
+    accountRefreshing,
+    refreshAccountQuota,
     loadData,
     resetData,
   } = useQuotaData();
@@ -45,8 +92,28 @@ export default function DashboardPage() {
     if (authMountAbortRef.current) authMountAbortRef.current.abort();
     setAuth({ authenticated: false, loginMode: 'password', checking: false });
     resetData();
-    setSelectedAccount(null);
+    setSelectedAccountId(null);
   }, [resetData]);
+
+  const [togglingGovernor, setTogglingGovernor] = useState(false);
+
+  const handleToggleGovernor = useCallback(async (connectionId, active) => {
+    setTogglingGovernor(true);
+    try {
+      const res = await toggleConnectionGovernor(connectionId, active);
+      setConnections((prev) =>
+        prev.map((c) => (c.id === connectionId ? { ...c, active: res.active, isOverride: res.mode === 'simulated' } : c))
+      );
+      return { success: true, ...res };
+    } catch (err) {
+      if (err instanceof SessionExpiredError) {
+        handleSessionLoss();
+      }
+      return { success: false, error: err };
+    } finally {
+      setTogglingGovernor(false);
+    }
+  }, [handleSessionLoss, setConnections]);
 
   const {
     stats,
@@ -190,6 +257,48 @@ export default function DashboardPage() {
     });
   }, [presentedConnections, quotas]);
 
+  const selectedAccount = useMemo(() => {
+    if (!selectedAccountId) return null;
+    return enrichedAccounts.find((a) => a.id === selectedAccountId) || null;
+  }, [enrichedAccounts, selectedAccountId]);
+
+  useAutoRefresh({
+    intervalSec,
+    lastSyncAt,
+    onRefresh: () => {
+      if (activeTab === 'usage') loadStats(statsPeriod);
+      else loadData(true, handleSessionLoss);
+    },
+    enabled: auth.authenticated && cadence !== 'off',
+    refreshing: refreshing || statsLoading,
+  });
+
+  useEffect(() => {
+    if (!auth.authenticated) return;
+    const notifyFn = notificationPermission === 'granted' && typeof Notification !== 'undefined'
+      ? (title, opts) => new Notification(title, opts)
+      : null;
+    checkAccountsForAlerts(enrichedAccounts, alertedIncidentsRef.current, notifyFn);
+  }, [enrichedAccounts, notificationPermission, auth.authenticated]);
+
+  const activeAlertsCount = useMemo(() => {
+    let count = 0;
+    for (const acc of enrichedAccounts) {
+      if (acc.effectiveStatus?.status === 'exhausted' || (acc.effectiveStatus?.reason || acc.quota?.reason) === 'PROVIDER_AUTH_REQUIRED') {
+        count++;
+      }
+    }
+    return count;
+  }, [enrichedAccounts]);
+
+  const handleExportCsv = () => {
+    exportCsv(enrichedAccounts);
+  };
+
+  const handleExportJson = () => {
+    exportJson(enrichedAccounts);
+  };
+
   const displayedGroups = useMemo(() => {
     const filteredAccounts = filterAndSortAccounts(enrichedAccounts, {
       activeFilter,
@@ -253,6 +362,13 @@ export default function DashboardPage() {
         }}
         onResetFilters={handleResetFilters}
         accountsCount={connections.length}
+        cadence={cadence}
+        onCadenceChange={handleCadenceChange}
+        notificationPermission={notificationPermission}
+        onRequestNotificationPermission={handleRequestNotificationPermission}
+        activeAlertsCount={activeAlertsCount}
+        onExportCsv={handleExportCsv}
+        onExportJson={handleExportJson}
       />
 
       {activeTab === 'quotas' ? (
@@ -261,7 +377,7 @@ export default function DashboardPage() {
 
           <QuotaTable
             groups={displayedGroups}
-            onSelectAccount={(acc) => setSelectedAccount(acc)}
+            onSelectAccount={(acc) => setSelectedAccountId(acc ? acc.id : null)}
             onToggleExpandProvider={handleToggleExpandProvider}
           />
         </main>
@@ -269,6 +385,7 @@ export default function DashboardPage() {
         <main>
           <UsageView
             stats={stats}
+            connections={connections}
             loading={statsLoading}
             error={statsError}
             period={statsPeriod}
@@ -283,7 +400,11 @@ export default function DashboardPage() {
       {selectedAccount && (
         <DetailSheet
           account={selectedAccount}
-          onClose={() => setSelectedAccount(null)}
+          onClose={() => setSelectedAccountId(null)}
+          onRefreshQuota={refreshAccountQuota}
+          isRefreshingQuota={Boolean(accountRefreshing[selectedAccountId])}
+          onToggleGovernor={handleToggleGovernor}
+          isTogglingGovernor={togglingGovernor}
         />
       )}
     </>

@@ -1,6 +1,6 @@
 'use client';
 
-import { formatNumber, formatTokens, formatCost } from '../../lib/client/selectors.js';
+import { formatNumber, formatTokens, formatCost, aggregateUsageByProvider } from '../../lib/client/selectors.js';
 
 export default function UsageView({
   stats,
@@ -8,11 +8,13 @@ export default function UsageView({
   error,
   period,
   onPeriodChange,
+  connections = [],
 }) {
   const totals = stats?.totals || {};
   const chartPoints = Array.isArray(stats?.chart) ? stats.chart : [];
 
   const maxTokens = Math.max(...chartPoints.map((p) => p.tokens || 0), 1);
+  const breakdown = aggregateUsageByProvider(stats, connections);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -174,6 +176,82 @@ export default function UsageView({
                 </div>
               );
             })}
+          </div>
+        )}
+      </div>
+
+      {/* Provider Distribution Summary Cards */}
+      <div className="pp-card" style={{ padding: 18 }} data-testid="provider-distribution-section">
+        <h3 style={{ fontSize: 14, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12 }}>
+          Provider Distribution
+        </h3>
+        {breakdown.status === 'unavailable' ? (
+          <div style={{ padding: '16px 0', color: 'var(--theme-text-muted)', fontSize: 13 }}>
+            {breakdown.notice}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+            {breakdown.providers.map((p) => (
+              <div
+                key={p.provider}
+                style={{
+                  padding: 12,
+                  borderRadius: 'var(--radius-sm, 4px)',
+                  background: 'var(--theme-canvas-subtle)',
+                  border: '1px solid var(--theme-border)',
+                }}
+                data-testid={`provider-card-${p.provider}`}
+              >
+                <div style={{ fontSize: 13, fontWeight: 600, textTransform: 'capitalize', color: 'var(--theme-text)' }}>
+                  {p.provider}
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--theme-orange)', marginTop: 4 }}>
+                  {Math.round(p.tokenPct)}%
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
+                  {formatTokens(p.tokens)} tokens · {formatNumber(p.requests)} reqs ({Math.round(p.requestPct)}%)
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Account Consumption Breakdown Table */}
+      <div className="pp-card" style={{ padding: 18 }} data-testid="account-breakdown-section">
+        <h3 style={{ fontSize: 14, fontWeight: 700, textTransform: 'uppercase', marginBottom: 12 }}>
+          Account Consumption Breakdown
+        </h3>
+        {breakdown.status === 'unavailable' || breakdown.accounts.length === 0 ? (
+          <div style={{ padding: '16px 0', color: 'var(--theme-text-muted)', fontSize: 13 }}>
+            {breakdown.notice || 'No account activity recorded.'}
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--theme-border)', textAlign: 'left', color: 'var(--theme-text-muted)' }}>
+                  <th style={{ padding: '8px 12px' }}>Account</th>
+                  <th style={{ padding: '8px 12px' }}>Provider</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right' }}>Tokens</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right' }}>Share %</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right' }}>Requests</th>
+                  <th style={{ padding: '8px 12px', textAlign: 'right' }}>Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {breakdown.accounts.map((acc, idx) => (
+                  <tr key={acc.connectionId || idx} style={{ borderBottom: '1px solid var(--theme-border-subtle, #eee)' }}>
+                    <td style={{ padding: '8px 12px', fontWeight: 500 }}>{acc.alias}</td>
+                    <td style={{ padding: '8px 12px', textTransform: 'capitalize' }}>{acc.provider}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatTokens(acc.totalTokens)}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{Math.round(acc.tokenPct)}%</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatNumber(acc.requests)}</td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatCost(acc.estimatedCost)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
