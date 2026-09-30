@@ -24,35 +24,47 @@ export async function GET(request) {
   let statsData = null;
   let chartData = [];
 
-  try {
-    const statsRes = await defaultUpstreamClient.request(
-      `/api/usage/stats?period=${period}`,
-      { method: 'GET' },
-      session.upstreamToken
-    );
-    if (!statsRes.ok) {
-      return createErrorResponse(502, 'INVALID_UPSTREAM_RESPONSE');
-    }
-    const statsText = await readBoundedResponseText(statsRes);
-    statsData = JSON.parse(statsText);
-  } catch (err) {
+  // ponytail: parallel fetch stats + chart; chart failure degrades gracefully to empty array
+  const [statsResult, chartResult] = await Promise.allSettled([
+    (async () => {
+      const statsRes = await defaultUpstreamClient.request(
+        `/api/usage/stats?period=${period}`,
+        { method: 'GET' },
+        session.upstreamToken
+      );
+      if (!statsRes.ok) {
+        const err = new Error('Invalid upstream response');
+        err.status = 502;
+        err.code = 'INVALID_UPSTREAM_RESPONSE';
+        throw err;
+      }
+      const statsText = await readBoundedResponseText(statsRes);
+      return JSON.parse(statsText);
+    })(),
+    (async () => {
+      const chartRes = await defaultUpstreamClient.request(
+        `/api/usage/chart?period=${period}`,
+        { method: 'GET' },
+        session.upstreamToken
+      );
+      if (chartRes.ok) {
+        const chartText = await readBoundedResponseText(chartRes);
+        return JSON.parse(chartText);
+      }
+      return [];
+    })(),
+  ]);
+
+  if (statsResult.status === 'rejected') {
+    const err = statsResult.reason;
     const status = err.status || 503;
     const code = err.code || 'UPSTREAM_UNAVAILABLE';
     return createErrorResponse(status, code);
   }
 
-  try {
-    const chartRes = await defaultUpstreamClient.request(
-      `/api/usage/chart?period=${period}`,
-      { method: 'GET' },
-      session.upstreamToken
-    );
-    if (chartRes.ok) {
-      const chartText = await readBoundedResponseText(chartRes);
-      chartData = JSON.parse(chartText);
-    }
-  } catch {
-    chartData = [];
+  statsData = statsResult.value;
+  if (chartResult.status === 'fulfilled') {
+    chartData = chartResult.value;
   }
 
   const normalized = normalizeStats(period, statsData, chartData);

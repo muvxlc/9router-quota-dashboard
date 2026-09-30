@@ -25,3 +25,8 @@ test-evidence/
 # Throwaway design previews & scratchpad
 design-preview-*.html
 
+# Tooling and local artifacts
+.omo/
+.playwright-mcp/
+*.png
+

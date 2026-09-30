@@ -8,7 +8,7 @@ import UsageView from './components/UsageView.js';
 import DetailSheet from './components/DetailSheet.js';
 import LoginModal from './components/LoginModal.js';
 import { fetchAuthStatus, loginWithPassword, logout, SessionExpiredError } from '../lib/client/api.js';
-import { groupAccountsByProvider, filterAndSortAccounts, buildAccountPresentation, maskEmail } from '../lib/client/selectors.js';
+import { groupAccountsByProvider, filterAndSortAccounts, buildAccountPresentation, maskEmail, deriveAccountStatus, getAccountEffectiveRemainingPct } from '../lib/client/selectors.js';
 import { useTheme } from '../lib/client/useTheme.js';
 import { useQuotaData } from '../lib/client/useQuotaData.js';
 import { useStatsData } from '../lib/client/useStatsData.js';
@@ -163,19 +163,35 @@ export default function DashboardPage() {
   const presentedConnections = useMemo(() => {
     return connections.map((conn) => {
       const pres = presentationMap.get(conn.id) || {};
+      const displayAlias = pres.alias || conn.label || conn.id;
+      const maskedIdentity = pres.maskedIdentity || maskEmail(conn.label || conn.id);
+      const shortId = pres.shortId || conn.id;
       return {
         ...conn,
-        displayAlias: pres.alias || conn.label || conn.id,
-        maskedIdentity: pres.maskedIdentity || maskEmail(conn.label || conn.id),
-        shortId: pres.shortId || conn.id,
+        displayAlias,
+        maskedIdentity,
+        shortId,
+        _searchTarget: `${conn.label || ''} ${conn.id || ''} ${conn.provider || ''} ${displayAlias} ${maskedIdentity}`.toLowerCase(),
       };
     });
   }, [connections, presentationMap]);
 
+  // ponytail: single-pass memoized account enrichment; avoids double grouping and redundant status derivations on filter changes
+  const enrichedAccounts = useMemo(() => {
+    return presentedConnections.map((conn) => {
+      const quota = quotas[conn.id] || null;
+      const effectiveStatus = deriveAccountStatus(conn, quota);
+      return {
+        ...conn,
+        quota,
+        effectiveStatus,
+        effectiveRemainingPct: getAccountEffectiveRemainingPct({ quota }),
+      };
+    });
+  }, [presentedConnections, quotas]);
+
   const displayedGroups = useMemo(() => {
-    const allGroups = groupAccountsByProvider(presentedConnections, quotas);
-    const flattenedAccounts = allGroups.flatMap((g) => g.accounts);
-    const filteredAccounts = filterAndSortAccounts(flattenedAccounts, {
+    const filteredAccounts = filterAndSortAccounts(enrichedAccounts, {
       activeFilter,
       provider: providerFilter,
       status: statusFilter,
@@ -184,18 +200,8 @@ export default function DashboardPage() {
       sortOrder,
     });
 
-    const filteredConns = filteredAccounts.map((a) => ({
-      id: a.id,
-      provider: a.provider,
-      label: a.label,
-      active: a.active,
-      displayAlias: a.displayAlias,
-      maskedIdentity: a.maskedIdentity,
-      shortId: a.shortId,
-    }));
-
-    return groupAccountsByProvider(filteredConns, quotas, { expandedProviders });
-  }, [presentedConnections, quotas, activeFilter, providerFilter, statusFilter, search, sortBy, sortOrder, expandedProviders]);
+    return groupAccountsByProvider(filteredAccounts, quotas, { expandedProviders });
+  }, [enrichedAccounts, quotas, activeFilter, providerFilter, statusFilter, search, sortBy, sortOrder, expandedProviders]);
 
   if (auth.checking) {
     return (
