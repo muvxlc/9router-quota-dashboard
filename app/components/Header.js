@@ -36,10 +36,8 @@ export default function Header({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
   const menuRef = useRef(null);
   const filtersRef = useRef(null);
-  const exportRef = useRef(null);
 
   const syncLabel = lastSyncAt
     ? `Updated ${new Date(lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}`
@@ -55,15 +53,11 @@ export default function Header({
       if (filtersRef.current && !filtersRef.current.contains(e.target)) {
         setFiltersOpen(false);
       }
-      if (exportRef.current && !exportRef.current.contains(e.target)) {
-        setExportOpen(false);
-      }
     };
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setMenuOpen(false);
         setFiltersOpen(false);
-        setExportOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -203,124 +197,6 @@ export default function Header({
             </>
           )}
 
-          {/* Cadence Selector */}
-          <div className="cadence-select-wrap" style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <select
-              className="cadence-select"
-              value={cadence}
-              onChange={(e) => onCadenceChange?.(e.target.value)}
-              aria-label="Auto-refresh interval"
-              data-testid="cadence-selector"
-              style={{
-                padding: '4px 8px',
-                fontSize: 12,
-                background: 'var(--theme-canvas-subtle)',
-                color: 'var(--theme-text)',
-                border: '1px solid var(--theme-border)',
-                borderRadius: 'var(--radius-sm, 4px)',
-                cursor: 'pointer',
-              }}
-            >
-              <option value="off">Sync: Off</option>
-              <option value="15s">Sync: 15s</option>
-              <option value="30s">Sync: 30s</option>
-              <option value="60s">Sync: 60s</option>
-              <option value="5m">Sync: 5m</option>
-            </select>
-          </div>
-
-          {/* Web Notification Alerts Chip */}
-          <button
-            type="button"
-            className={`notification-toggle-btn ${notificationPermission === 'granted' ? 'is-granted' : ''}`}
-            onClick={onRequestNotificationPermission}
-            title={`Notifications: ${notificationPermission}`}
-            aria-label={`Web notifications ${notificationPermission}`}
-            data-testid="notification-permission-btn"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '4px 8px',
-              fontSize: 12,
-              background: 'var(--theme-canvas-subtle)',
-              color: notificationPermission === 'granted' ? 'var(--theme-green)' : notificationPermission === 'denied' ? 'var(--theme-red)' : 'var(--theme-text-muted)',
-              border: '1px solid var(--theme-border)',
-              borderRadius: 'var(--radius-sm, 4px)',
-              cursor: notificationPermission === 'granted' ? 'default' : 'pointer',
-            }}
-          >
-            <span>{notificationPermission === 'granted' ? '🔔 Alerts On' : notificationPermission === 'denied' ? '🔕 Alerts Off' : '🔔 Alerts'}</span>
-            {activeAlertsCount > 0 && (
-              <span
-                className="filter-count-badge"
-                style={{ backgroundColor: 'var(--theme-red)', color: '#fff', marginLeft: 2 }}
-                data-testid="alerts-count-badge"
-              >
-                {activeAlertsCount}
-              </span>
-            )}
-          </button>
-
-          {/* Export Dropdown */}
-          <div style={{ position: 'relative' }} ref={exportRef}>
-            <button
-              type="button"
-              className="export-toggle-btn"
-              onClick={() => setExportOpen((prev) => !prev)}
-              aria-haspopup="menu"
-              aria-expanded={exportOpen}
-              title="Export snapshot"
-              data-testid="export-dropdown-btn"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '4px 8px',
-                fontSize: 12,
-                background: 'var(--theme-canvas-subtle)',
-                color: 'var(--theme-text)',
-                border: '1px solid var(--theme-border)',
-                borderRadius: 'var(--radius-sm, 4px)',
-                cursor: 'pointer',
-              }}
-            >
-              <span>Export ▾</span>
-            </button>
-            {exportOpen && (
-              <div
-                role="menu"
-                className="app-popover-menu"
-                style={{ minWidth: 120, right: 0, top: 'calc(100% + 4px)', position: 'absolute', zIndex: 50 }}
-              >
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setExportOpen(false);
-                    onExportCsv?.();
-                  }}
-                  className="app-menu-item"
-                  data-testid="export-csv-btn"
-                >
-                  Export CSV
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setExportOpen(false);
-                    onExportJson?.();
-                  }}
-                  className="app-menu-item"
-                  data-testid="export-json-btn"
-                >
-                  Export JSON
-                </button>
-              </div>
-            )}
-          </div>
-
           {/* Primary Refresh CTA */}
           <button
             type="button"
@@ -348,12 +224,115 @@ export default function Header({
               aria-expanded={menuOpen}
               aria-label="Account and settings menu"
               title="Settings"
+              data-testid="settings-menu-btn"
+              style={{ position: 'relative' }}
             >
               •••
+              {activeAlertsCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: 6,
+                    right: 6,
+                    width: 7,
+                    height: 7,
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--theme-red)',
+                  }}
+                />
+              )}
             </button>
 
             {menuOpen && (
-              <div role="menu" className="app-popover-menu" style={{ minWidth: 160 }}>
+              <div role="menu" className="app-popover-menu" style={{ minWidth: 220 }}>
+                {/* Auto-Refresh Cadence */}
+                <div className="app-menu-item" style={{ cursor: 'default' }}>
+                  <span>Auto-Refresh</span>
+                  <select
+                    className="cadence-select"
+                    value={cadence}
+                    onChange={(e) => onCadenceChange?.(e.target.value)}
+                    aria-label="Auto-refresh interval"
+                    data-testid="cadence-selector"
+                    style={{
+                      padding: '2px 6px',
+                      fontSize: 12,
+                      background: 'var(--theme-canvas-subtle)',
+                      color: 'var(--theme-text)',
+                      border: '1px solid var(--theme-border)',
+                      borderRadius: 'var(--radius-sm, 4px)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <option value="off">Off</option>
+                    <option value="15s">15s</option>
+                    <option value="30s">30s</option>
+                    <option value="60s">60s</option>
+                    <option value="5m">5m</option>
+                  </select>
+                </div>
+
+                {/* Notifications Alert Toggle */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={onRequestNotificationPermission}
+                  className="app-menu-item"
+                  data-testid="notification-permission-btn"
+                  title={`Notifications: ${notificationPermission}`}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <span>{notificationPermission === 'granted' ? '🔔' : notificationPermission === 'denied' ? '🔕' : '🔔'}</span>
+                    <span>Alerts</span>
+                    {activeAlertsCount > 0 && (
+                      <span
+                        className="filter-count-badge"
+                        style={{ backgroundColor: 'var(--theme-red)', color: '#fff' }}
+                        data-testid="alerts-count-badge"
+                      >
+                        {activeAlertsCount}
+                      </span>
+                    )}
+                  </span>
+                  <span style={{ fontSize: 12, color: notificationPermission === 'granted' ? 'var(--theme-green)' : notificationPermission === 'denied' ? 'var(--theme-red)' : 'var(--theme-text-muted)' }}>
+                    {notificationPermission === 'granted' ? 'Enabled' : notificationPermission === 'denied' ? 'Blocked' : 'Enable'}
+                  </span>
+                </button>
+
+                <div style={{ height: 1, backgroundColor: 'var(--theme-border)', margin: '2px 0' }} />
+
+                {/* Export Options */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onExportCsv?.();
+                  }}
+                  className="app-menu-item"
+                  data-testid="export-csv-btn"
+                >
+                  <span>Export CSV</span>
+                  <span style={{ fontSize: 12, color: 'var(--theme-text-muted)' }}>.csv</span>
+                </button>
+
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onExportJson?.();
+                  }}
+                  className="app-menu-item"
+                  data-testid="export-json-btn"
+                >
+                  <span>Export JSON</span>
+                  <span style={{ fontSize: 12, color: 'var(--theme-text-muted)' }}>.json</span>
+                </button>
+
+                <div style={{ height: 1, backgroundColor: 'var(--theme-border)', margin: '2px 0' }} />
+
+                {/* Theme Toggle */}
                 <button
                   type="button"
                   role="menuitem"
@@ -371,6 +350,7 @@ export default function Header({
 
                 <div style={{ height: 1, backgroundColor: 'var(--theme-border)', margin: '2px 0' }} />
 
+                {/* Sign Out */}
                 <button
                   type="button"
                   role="menuitem"

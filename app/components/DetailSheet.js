@@ -9,6 +9,7 @@ import {
   maskEmail,
   computeResetCountdown,
   useCentralClock,
+  calculateDepletionVelocity,
 } from '../../lib/client/selectors.js';
 
 export default function DetailSheet({
@@ -60,6 +61,7 @@ export default function DetailSheet({
   const currentActive = governorState !== null ? governorState.active : (account.overrideActive ?? active);
   const mode = governorState?.mode || (account.isOverride ? 'simulated' : null);
   const notice = governorState?.notice || null;
+  const velocity = calculateDepletionVelocity(quota, nowMs);
 
   const handleRefresh = async () => {
     if (!onRefreshQuota || isRefreshingQuota || cooldownSec > 0) return;
@@ -122,8 +124,13 @@ export default function DetailSheet({
 
           <div className="modal-detail-row">
             <span className="label">Status</span>
-            <span className="val" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span className="val" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <StatusPill statusObj={effectiveStatus} suppressAvailable={false} />
+              {velocity && (
+                <span className={velocity.badgeClass} title={velocity.detail} data-testid="detail-burn-rate-badge">
+                  {velocity.label}
+                </span>
+              )}
               {!currentActive && <span className="pp-tag-disabled">Disabled</span>}
             </span>
           </div>

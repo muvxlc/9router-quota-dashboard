@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import StatusPill from './StatusPill.js';
 import QuotaWindowCell from './QuotaWindowCell.js';
-import { getProviderQuotaAverages } from '../../lib/client/selectors.js';
+import { getProviderQuotaAverages, calculateDepletionVelocity } from '../../lib/client/selectors.js';
 import { computePoolColumns, getGroupWeight } from '../../lib/client/poolLayout.js';
 
 function getAverageLabel(avg) {
@@ -113,6 +113,7 @@ export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProv
         <div className="pp-account-list" role="list">
           {accounts.map((acc) => {
             const quotaWindows = Array.isArray(acc.quota?.windows) ? acc.quota.windows : [];
+            const velocity = calculateDepletionVelocity(acc.quota);
 
             return (
               <div
@@ -132,11 +133,16 @@ export default function QuotaTable({ groups, onSelectAccount, onToggleExpandProv
                 data-active={acc.effectiveStatus?.status === 'active' || acc.active === true}
               >
                 <div className="pp-identity">
-                  <div className="pp-identity-header">
+                  <div className="pp-identity-header" style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <span className="pp-alias" title={acc.displayAlias || acc.label || acc.id}>
                       {acc.displayAlias || acc.label || acc.id}
                     </span>
                     <StatusPill statusObj={acc.effectiveStatus} />
+                    {velocity && (
+                      <span className={velocity.badgeClass} title={velocity.detail} data-testid="burn-rate-badge">
+                        {velocity.label}
+                      </span>
+                    )}
                   </div>
                   <div className="pp-email" title={acc.maskedIdentity}>
                     {acc.maskedIdentity}

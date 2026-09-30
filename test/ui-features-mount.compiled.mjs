@@ -200,10 +200,8 @@ function Header({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [exportOpen, setExportOpen] = useState(false);
   const menuRef = useRef(null);
   const filtersRef = useRef(null);
-  const exportRef = useRef(null);
   const syncLabel = lastSyncAt ? `Updated ${new Date(lastSyncAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}` : "Connecting…";
   const extraFiltersCount = (provider !== "all" ? 1 : 0) + (status !== "all" ? 1 : 0);
   useEffect(() => {
@@ -214,15 +212,11 @@ function Header({
       if (filtersRef.current && !filtersRef.current.contains(e.target)) {
         setFiltersOpen(false);
       }
-      if (exportRef.current && !exportRef.current.contains(e.target)) {
-        setExportOpen(false);
-      }
     };
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
         setMenuOpen(false);
         setFiltersOpen(false);
-        setExportOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -428,138 +422,6 @@ function Header({
                   }, undefined, true, undefined, this)
                 ]
               }, undefined, true, undefined, this),
-              /* @__PURE__ */ jsxDEV2("div", {
-                className: "cadence-select-wrap",
-                style: { display: "inline-flex", alignItems: "center" },
-                children: /* @__PURE__ */ jsxDEV2("select", {
-                  className: "cadence-select",
-                  value: cadence,
-                  onChange: (e) => onCadenceChange?.(e.target.value),
-                  "aria-label": "Auto-refresh interval",
-                  "data-testid": "cadence-selector",
-                  style: {
-                    padding: "4px 8px",
-                    fontSize: 12,
-                    background: "var(--theme-canvas-subtle)",
-                    color: "var(--theme-text)",
-                    border: "1px solid var(--theme-border)",
-                    borderRadius: "var(--radius-sm, 4px)",
-                    cursor: "pointer"
-                  },
-                  children: [
-                    /* @__PURE__ */ jsxDEV2("option", {
-                      value: "off",
-                      children: "Sync: Off"
-                    }, undefined, false, undefined, this),
-                    /* @__PURE__ */ jsxDEV2("option", {
-                      value: "15s",
-                      children: "Sync: 15s"
-                    }, undefined, false, undefined, this),
-                    /* @__PURE__ */ jsxDEV2("option", {
-                      value: "30s",
-                      children: "Sync: 30s"
-                    }, undefined, false, undefined, this),
-                    /* @__PURE__ */ jsxDEV2("option", {
-                      value: "60s",
-                      children: "Sync: 60s"
-                    }, undefined, false, undefined, this),
-                    /* @__PURE__ */ jsxDEV2("option", {
-                      value: "5m",
-                      children: "Sync: 5m"
-                    }, undefined, false, undefined, this)
-                  ]
-                }, undefined, true, undefined, this)
-              }, undefined, false, undefined, this),
-              /* @__PURE__ */ jsxDEV2("button", {
-                type: "button",
-                className: `notification-toggle-btn ${notificationPermission === "granted" ? "is-granted" : ""}`,
-                onClick: onRequestNotificationPermission,
-                title: `Notifications: ${notificationPermission}`,
-                "aria-label": `Web notifications ${notificationPermission}`,
-                "data-testid": "notification-permission-btn",
-                style: {
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "4px 8px",
-                  fontSize: 12,
-                  background: "var(--theme-canvas-subtle)",
-                  color: notificationPermission === "granted" ? "var(--theme-green)" : notificationPermission === "denied" ? "var(--theme-red)" : "var(--theme-text-muted)",
-                  border: "1px solid var(--theme-border)",
-                  borderRadius: "var(--radius-sm, 4px)",
-                  cursor: notificationPermission === "granted" ? "default" : "pointer"
-                },
-                children: [
-                  /* @__PURE__ */ jsxDEV2("span", {
-                    children: notificationPermission === "granted" ? "\uD83D\uDD14 Alerts On" : notificationPermission === "denied" ? "\uD83D\uDD15 Alerts Off" : "\uD83D\uDD14 Alerts"
-                  }, undefined, false, undefined, this),
-                  activeAlertsCount > 0 && /* @__PURE__ */ jsxDEV2("span", {
-                    className: "filter-count-badge",
-                    style: { backgroundColor: "var(--theme-red)", color: "#fff", marginLeft: 2 },
-                    "data-testid": "alerts-count-badge",
-                    children: activeAlertsCount
-                  }, undefined, false, undefined, this)
-                ]
-              }, undefined, true, undefined, this),
-              /* @__PURE__ */ jsxDEV2("div", {
-                style: { position: "relative" },
-                ref: exportRef,
-                children: [
-                  /* @__PURE__ */ jsxDEV2("button", {
-                    type: "button",
-                    className: "export-toggle-btn",
-                    onClick: () => setExportOpen((prev) => !prev),
-                    "aria-haspopup": "menu",
-                    "aria-expanded": exportOpen,
-                    title: "Export snapshot",
-                    "data-testid": "export-dropdown-btn",
-                    style: {
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      padding: "4px 8px",
-                      fontSize: 12,
-                      background: "var(--theme-canvas-subtle)",
-                      color: "var(--theme-text)",
-                      border: "1px solid var(--theme-border)",
-                      borderRadius: "var(--radius-sm, 4px)",
-                      cursor: "pointer"
-                    },
-                    children: /* @__PURE__ */ jsxDEV2("span", {
-                      children: "Export ▾"
-                    }, undefined, false, undefined, this)
-                  }, undefined, false, undefined, this),
-                  exportOpen && /* @__PURE__ */ jsxDEV2("div", {
-                    role: "menu",
-                    className: "app-popover-menu",
-                    style: { minWidth: 120, right: 0, top: "calc(100% + 4px)", position: "absolute", zIndex: 50 },
-                    children: [
-                      /* @__PURE__ */ jsxDEV2("button", {
-                        type: "button",
-                        role: "menuitem",
-                        onClick: () => {
-                          setExportOpen(false);
-                          onExportCsv?.();
-                        },
-                        className: "app-menu-item",
-                        "data-testid": "export-csv-btn",
-                        children: "Export CSV"
-                      }, undefined, false, undefined, this),
-                      /* @__PURE__ */ jsxDEV2("button", {
-                        type: "button",
-                        role: "menuitem",
-                        onClick: () => {
-                          setExportOpen(false);
-                          onExportJson?.();
-                        },
-                        className: "app-menu-item",
-                        "data-testid": "export-json-btn",
-                        children: "Export JSON"
-                      }, undefined, false, undefined, this)
-                    ]
-                  }, undefined, true, undefined, this)
-                ]
-              }, undefined, true, undefined, this),
               /* @__PURE__ */ jsxDEV2("button", {
                 type: "button",
                 className: "btn-orange-cta",
@@ -606,13 +468,150 @@ function Header({
                     "aria-expanded": menuOpen,
                     "aria-label": "Account and settings menu",
                     title: "Settings",
-                    children: "•••"
-                  }, undefined, false, undefined, this),
+                    "data-testid": "settings-menu-btn",
+                    style: { position: "relative" },
+                    children: [
+                      "•••",
+                      activeAlertsCount > 0 && /* @__PURE__ */ jsxDEV2("span", {
+                        style: {
+                          position: "absolute",
+                          top: 6,
+                          right: 6,
+                          width: 7,
+                          height: 7,
+                          borderRadius: "50%",
+                          backgroundColor: "var(--theme-red)"
+                        }
+                      }, undefined, false, undefined, this)
+                    ]
+                  }, undefined, true, undefined, this),
                   menuOpen && /* @__PURE__ */ jsxDEV2("div", {
                     role: "menu",
                     className: "app-popover-menu",
-                    style: { minWidth: 160 },
+                    style: { minWidth: 220 },
                     children: [
+                      /* @__PURE__ */ jsxDEV2("div", {
+                        className: "app-menu-item",
+                        style: { cursor: "default" },
+                        children: [
+                          /* @__PURE__ */ jsxDEV2("span", {
+                            children: "Auto-Refresh"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsxDEV2("select", {
+                            className: "cadence-select",
+                            value: cadence,
+                            onChange: (e) => onCadenceChange?.(e.target.value),
+                            "aria-label": "Auto-refresh interval",
+                            "data-testid": "cadence-selector",
+                            style: {
+                              padding: "2px 6px",
+                              fontSize: 12,
+                              background: "var(--theme-canvas-subtle)",
+                              color: "var(--theme-text)",
+                              border: "1px solid var(--theme-border)",
+                              borderRadius: "var(--radius-sm, 4px)",
+                              cursor: "pointer"
+                            },
+                            children: [
+                              /* @__PURE__ */ jsxDEV2("option", {
+                                value: "off",
+                                children: "Off"
+                              }, undefined, false, undefined, this),
+                              /* @__PURE__ */ jsxDEV2("option", {
+                                value: "15s",
+                                children: "15s"
+                              }, undefined, false, undefined, this),
+                              /* @__PURE__ */ jsxDEV2("option", {
+                                value: "30s",
+                                children: "30s"
+                              }, undefined, false, undefined, this),
+                              /* @__PURE__ */ jsxDEV2("option", {
+                                value: "60s",
+                                children: "60s"
+                              }, undefined, false, undefined, this),
+                              /* @__PURE__ */ jsxDEV2("option", {
+                                value: "5m",
+                                children: "5m"
+                              }, undefined, false, undefined, this)
+                            ]
+                          }, undefined, true, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this),
+                      /* @__PURE__ */ jsxDEV2("button", {
+                        type: "button",
+                        role: "menuitem",
+                        onClick: onRequestNotificationPermission,
+                        className: "app-menu-item",
+                        "data-testid": "notification-permission-btn",
+                        title: `Notifications: ${notificationPermission}`,
+                        children: [
+                          /* @__PURE__ */ jsxDEV2("span", {
+                            style: { display: "inline-flex", alignItems: "center", gap: 6 },
+                            children: [
+                              /* @__PURE__ */ jsxDEV2("span", {
+                                children: notificationPermission === "granted" ? "\uD83D\uDD14" : notificationPermission === "denied" ? "\uD83D\uDD15" : "\uD83D\uDD14"
+                              }, undefined, false, undefined, this),
+                              /* @__PURE__ */ jsxDEV2("span", {
+                                children: "Alerts"
+                              }, undefined, false, undefined, this),
+                              activeAlertsCount > 0 && /* @__PURE__ */ jsxDEV2("span", {
+                                className: "filter-count-badge",
+                                style: { backgroundColor: "var(--theme-red)", color: "#fff" },
+                                "data-testid": "alerts-count-badge",
+                                children: activeAlertsCount
+                              }, undefined, false, undefined, this)
+                            ]
+                          }, undefined, true, undefined, this),
+                          /* @__PURE__ */ jsxDEV2("span", {
+                            style: { fontSize: 12, color: notificationPermission === "granted" ? "var(--theme-green)" : notificationPermission === "denied" ? "var(--theme-red)" : "var(--theme-text-muted)" },
+                            children: notificationPermission === "granted" ? "Enabled" : notificationPermission === "denied" ? "Blocked" : "Enable"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this),
+                      /* @__PURE__ */ jsxDEV2("div", {
+                        style: { height: 1, backgroundColor: "var(--theme-border)", margin: "2px 0" }
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsxDEV2("button", {
+                        type: "button",
+                        role: "menuitem",
+                        onClick: () => {
+                          setMenuOpen(false);
+                          onExportCsv?.();
+                        },
+                        className: "app-menu-item",
+                        "data-testid": "export-csv-btn",
+                        children: [
+                          /* @__PURE__ */ jsxDEV2("span", {
+                            children: "Export CSV"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsxDEV2("span", {
+                            style: { fontSize: 12, color: "var(--theme-text-muted)" },
+                            children: ".csv"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this),
+                      /* @__PURE__ */ jsxDEV2("button", {
+                        type: "button",
+                        role: "menuitem",
+                        onClick: () => {
+                          setMenuOpen(false);
+                          onExportJson?.();
+                        },
+                        className: "app-menu-item",
+                        "data-testid": "export-json-btn",
+                        children: [
+                          /* @__PURE__ */ jsxDEV2("span", {
+                            children: "Export JSON"
+                          }, undefined, false, undefined, this),
+                          /* @__PURE__ */ jsxDEV2("span", {
+                            style: { fontSize: 12, color: "var(--theme-text-muted)" },
+                            children: ".json"
+                          }, undefined, false, undefined, this)
+                        ]
+                      }, undefined, true, undefined, this),
+                      /* @__PURE__ */ jsxDEV2("div", {
+                        style: { height: 1, backgroundColor: "var(--theme-border)", margin: "2px 0" }
+                      }, undefined, false, undefined, this),
                       /* @__PURE__ */ jsxDEV2("button", {
                         type: "button",
                         role: "menuitem",
@@ -930,14 +929,59 @@ function aggregateUsageByProvider(stats = {}, connections = []) {
     tokenPct: totalTokens > 0 ? p.tokens / totalTokens * 100 : 0,
     requestPct: totalRequests > 0 ? p.requests / totalRequests * 100 : 0
   }));
+  const meanTokens = accountRows.length > 0 ? accountedTokens / accountRows.length : 0;
+  const accountsWithAnomalies = accountRows.map((acc) => {
+    const isSpike = meanTokens > 0 && acc.totalTokens >= meanTokens * 2.5 && acc.totalTokens > 1e4 || totalTokens > 0 && acc.totalTokens / totalTokens >= 0.3 && acc.totalTokens > 1e4;
+    const multiplier = meanTokens > 0 ? (acc.totalTokens / meanTokens).toFixed(1) : "1.0";
+    return {
+      ...acc,
+      isSpike,
+      spikeLabel: isSpike ? `${multiplier}x avg` : null
+    };
+  });
   return {
     status: "ok",
     available: true,
     notice: null,
     providers,
-    accounts: accountRows,
+    accounts: accountsWithAnomalies,
     totals
   };
+}
+function calculateDepletionVelocity(quota = null, nowMs = Date.now()) {
+  if (!quota || !Array.isArray(quota.windows) || quota.windows.length === 0) {
+    return null;
+  }
+  for (const win of quota.windows) {
+    if (!win || win.unlimited)
+      continue;
+    const remainingPct = typeof win.remainingPercent === "number" ? win.remainingPercent : null;
+    const resetAt = win.resetAt;
+    if (remainingPct === null || !resetAt)
+      continue;
+    const resetMs = new Date(resetAt).getTime();
+    if (Number.isNaN(resetMs) || resetMs <= nowMs)
+      continue;
+    const remainingSec = (resetMs - nowMs) / 1000;
+    const remainingHours = remainingSec / 3600;
+    if (remainingPct > 0 && remainingPct <= 15 && remainingHours >= 1.5) {
+      return {
+        level: "critical",
+        badgeClass: "pp-tag-depleted",
+        label: "RUNOUT RISK",
+        detail: `${remainingPct}% left with ${Math.round(remainingHours)}h until reset`
+      };
+    }
+    if (remainingPct > 0 && remainingPct <= 30 && remainingHours >= 3) {
+      return {
+        level: "warning",
+        badgeClass: "pp-tag-low",
+        label: "HIGH VELOCITY",
+        detail: `${remainingPct}% left with ${Math.round(remainingHours)}h until reset`
+      };
+    }
+  }
+  return null;
 }
 
 // app/components/DetailSheet.js
@@ -990,6 +1034,7 @@ function DetailSheet({
   const currentActive = governorState !== null ? governorState.active : account.overrideActive ?? active;
   const mode = governorState?.mode || (account.isOverride ? "simulated" : null);
   const notice = governorState?.notice || null;
+  const velocity = calculateDepletionVelocity(quota, nowMs);
   const handleRefresh = async () => {
     if (!onRefreshQuota || isRefreshingQuota || cooldownSec > 0)
       return;
@@ -1091,11 +1136,17 @@ function DetailSheet({
                 }, undefined, false, undefined, this),
                 /* @__PURE__ */ jsxDEV4("span", {
                   className: "val",
-                  style: { display: "inline-flex", alignItems: "center", gap: 6 },
+                  style: { display: "inline-flex", alignItems: "center", gap: 6, flexWrap: "wrap" },
                   children: [
                     /* @__PURE__ */ jsxDEV4(StatusPill, {
                       statusObj: effectiveStatus,
                       suppressAvailable: false
+                    }, undefined, false, undefined, this),
+                    velocity && /* @__PURE__ */ jsxDEV4("span", {
+                      className: velocity.badgeClass,
+                      title: velocity.detail,
+                      "data-testid": "detail-burn-rate-badge",
+                      children: velocity.label
                     }, undefined, false, undefined, this),
                     !currentActive && /* @__PURE__ */ jsxDEV4("span", {
                       className: "pp-tag-disabled",
@@ -1726,7 +1777,20 @@ function UsageView({
                     children: [
                       /* @__PURE__ */ jsxDEV6("td", {
                         style: { padding: "8px 12px", fontWeight: 500 },
-                        children: acc.alias
+                        children: /* @__PURE__ */ jsxDEV6("div", {
+                          style: { display: "inline-flex", alignItems: "center", gap: 6 },
+                          children: [
+                            /* @__PURE__ */ jsxDEV6("span", {
+                              children: acc.alias
+                            }, undefined, false, undefined, this),
+                            acc.isSpike && /* @__PURE__ */ jsxDEV6("span", {
+                              className: "pp-tag-depleted",
+                              title: `Traffic spike: ${acc.spikeLabel}`,
+                              "data-testid": "usage-spike-badge",
+                              children: "SPIKE"
+                            }, undefined, false, undefined, this)
+                          ]
+                        }, undefined, true, undefined, this)
                       }, undefined, false, undefined, this),
                       /* @__PURE__ */ jsxDEV6("td", {
                         style: { padding: "8px 12px", textTransform: "capitalize" },
@@ -1819,6 +1883,11 @@ test("Header mounts, handles cadence selection, alert permissions, and export dr
       }
     }, undefined, false, undefined, this));
   });
+  const menuBtn = container.querySelector('[data-testid="settings-menu-btn"]');
+  assert.ok(menuBtn);
+  await act(async () => {
+    menuBtn.click();
+  });
   const cadenceSelect = container.querySelector('[data-testid="cadence-selector"]');
   assert.ok(cadenceSelect);
   assert.equal(cadenceSelect.value, "off");
@@ -1836,11 +1905,6 @@ test("Header mounts, handles cadence selection, alert permissions, and export dr
   const alertsBadge = container.querySelector('[data-testid="alerts-count-badge"]');
   assert.ok(alertsBadge);
   assert.equal(alertsBadge.textContent.trim(), "2");
-  const exportDropdownBtn = container.querySelector('[data-testid="export-dropdown-btn"]');
-  assert.ok(exportDropdownBtn);
-  await act(async () => {
-    exportDropdownBtn.click();
-  });
   const csvBtn = container.querySelector('[data-testid="export-csv-btn"]');
   const jsonBtn = container.querySelector('[data-testid="export-json-btn"]');
   assert.ok(csvBtn);
@@ -1850,7 +1914,7 @@ test("Header mounts, handles cadence selection, alert permissions, and export dr
   });
   assert.equal(csvExportTriggered, true);
   await act(async () => {
-    exportDropdownBtn.click();
+    menuBtn.click();
   });
   const jsonBtnAfterReopen = container.querySelector('[data-testid="export-json-btn"]');
   assert.ok(jsonBtnAfterReopen);
@@ -1880,11 +1944,11 @@ test("DetailSheet mounts, handles quota force-refresh, and toggles governor mode
       windows: [
         {
           label: "5-Hour",
-          remainingPercent: 75,
-          used: 250,
+          remainingPercent: 10,
+          used: 900,
           total: 1000,
           unit: "tokens",
-          resetAt: new Date(Date.now() + 45000).toISOString()
+          resetAt: new Date(Date.now() + 3 * 3600 * 1000).toISOString()
         }
       ]
     }
@@ -1928,6 +1992,10 @@ test("DetailSheet mounts, handles quota force-refresh, and toggles governor mode
   const badge = container.querySelector('[data-testid="governor-mode-badge"]');
   assert.ok(badge);
   assert.equal(badge.textContent.trim(), "Dashboard Override (Router Read-Only)");
+  const burnRateBadge = container.querySelector('[data-testid="detail-burn-rate-badge"]');
+  assert.ok(burnRateBadge);
+  assert.equal(burnRateBadge.textContent.trim(), "RUNOUT RISK");
+  assert.equal(burnRateBadge.className, "pp-tag-depleted");
   await act(async () => {
     root.unmount();
   });
@@ -2011,6 +2079,10 @@ test("UsageView mounts and renders provider distribution and account breakdown t
   assert.ok(accountSection);
   assert.match(accountSection.textContent, /worker-1@test\.com/);
   assert.match(accountSection.textContent, /worker-2@test\.com/);
+  const spikeBadge = container.querySelector('[data-testid="usage-spike-badge"]');
+  assert.ok(spikeBadge);
+  assert.equal(spikeBadge.textContent.trim(), "SPIKE");
+  assert.equal(spikeBadge.className, "pp-tag-depleted");
   await act(async () => {
     root.unmount();
   });

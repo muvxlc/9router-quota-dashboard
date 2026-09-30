@@ -242,7 +242,20 @@ export default function UsageView({
               <tbody>
                 {breakdown.accounts.map((acc, idx) => (
                   <tr key={acc.connectionId || idx} style={{ borderBottom: '1px solid var(--theme-border-subtle, #eee)' }}>
-                    <td style={{ padding: '8px 12px', fontWeight: 500 }}>{acc.alias}</td>
+                    <td style={{ padding: '8px 12px', fontWeight: 500 }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <span>{acc.alias}</span>
+                        {acc.isSpike && (
+                          <span
+                            className="pp-tag-depleted"
+                            title={`Traffic spike: ${acc.spikeLabel}`}
+                            data-testid="usage-spike-badge"
+                          >
+                            SPIKE
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td style={{ padding: '8px 12px', textTransform: 'capitalize' }}>{acc.provider}</td>
                     <td style={{ padding: '8px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{formatTokens(acc.totalTokens)}</td>
                     <td style={{ padding: '8px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{Math.round(acc.tokenPct)}%</td>

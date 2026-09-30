@@ -70,6 +70,13 @@ test('Header mounts, handles cadence selection, alert permissions, and export dr
     );
   });
 
+  // Open settings menu (•••)
+  const menuBtn = container.querySelector('[data-testid="settings-menu-btn"]');
+  assert.ok(menuBtn);
+  await act(async () => {
+    menuBtn.click();
+  });
+
   const cadenceSelect = container.querySelector('[data-testid="cadence-selector"]');
   assert.ok(cadenceSelect);
   assert.equal(cadenceSelect.value, 'off');
@@ -91,12 +98,6 @@ test('Header mounts, handles cadence selection, alert permissions, and export dr
   assert.ok(alertsBadge);
   assert.equal(alertsBadge.textContent.trim(), '2');
 
-  const exportDropdownBtn = container.querySelector('[data-testid="export-dropdown-btn"]');
-  assert.ok(exportDropdownBtn);
-  await act(async () => {
-    exportDropdownBtn.click();
-  });
-
   const csvBtn = container.querySelector('[data-testid="export-csv-btn"]');
   const jsonBtn = container.querySelector('[data-testid="export-json-btn"]');
   assert.ok(csvBtn);
@@ -107,8 +108,9 @@ test('Header mounts, handles cadence selection, alert permissions, and export dr
   });
   assert.equal(csvExportTriggered, true);
 
+  // Re-open settings menu since clicking export item closes the menu
   await act(async () => {
-    exportDropdownBtn.click();
+    menuBtn.click();
   });
   const jsonBtnAfterReopen = container.querySelector('[data-testid="export-json-btn"]');
   assert.ok(jsonBtnAfterReopen);
@@ -142,11 +144,11 @@ test('DetailSheet mounts, handles quota force-refresh, and toggles governor mode
       windows: [
         {
           label: '5-Hour',
-          remainingPercent: 75,
-          used: 250,
+          remainingPercent: 10,
+          used: 900,
           total: 1000,
           unit: 'tokens',
-          resetAt: new Date(Date.now() + 45000).toISOString(),
+          resetAt: new Date(Date.now() + 3 * 3600 * 1000).toISOString(),
         },
       ],
     },
@@ -198,6 +200,11 @@ test('DetailSheet mounts, handles quota force-refresh, and toggles governor mode
   const badge = container.querySelector('[data-testid="governor-mode-badge"]');
   assert.ok(badge);
   assert.equal(badge.textContent.trim(), 'Dashboard Override (Router Read-Only)');
+
+  const burnRateBadge = container.querySelector('[data-testid="detail-burn-rate-badge"]');
+  assert.ok(burnRateBadge);
+  assert.equal(burnRateBadge.textContent.trim(), 'RUNOUT RISK');
+  assert.equal(burnRateBadge.className, 'pp-tag-depleted');
 
   await act(async () => {
     root.unmount();
@@ -296,6 +303,11 @@ test('UsageView mounts and renders provider distribution and account breakdown t
   assert.ok(accountSection);
   assert.match(accountSection.textContent, /worker-1@test\.com/);
   assert.match(accountSection.textContent, /worker-2@test\.com/);
+
+  const spikeBadge = container.querySelector('[data-testid="usage-spike-badge"]');
+  assert.ok(spikeBadge);
+  assert.equal(spikeBadge.textContent.trim(), 'SPIKE');
+  assert.equal(spikeBadge.className, 'pp-tag-depleted');
 
   await act(async () => {
     root.unmount();
