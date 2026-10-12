@@ -190,10 +190,12 @@ function Header({
   onSortChange,
   onResetFilters,
   accountsCount = 0,
-  cadence = "off",
+  cadence = "60s",
   onCadenceChange,
   notificationPermission = "default",
   onRequestNotificationPermission,
+  alertsEnabled = true,
+  onToggleAlerts,
   activeAlertsCount = 0,
   onExportCsv,
   onExportJson
@@ -202,6 +204,7 @@ function Header({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const menuRef = useRef(null);
   const filtersRef = useRef(null);
+  const handleAlertsClick = onToggleAlerts || onRequestNotificationPermission;
   const syncLabel = lastSyncAt ? `Updated ${new Date(lastSyncAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}` : "Connecting…";
   const extraFiltersCount = (provider !== "all" ? 1 : 0) + (status !== "all" ? 1 : 0);
   useEffect(() => {
@@ -220,9 +223,11 @@ function Header({
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
@@ -472,7 +477,7 @@ function Header({
                     style: { position: "relative" },
                     children: [
                       "•••",
-                      activeAlertsCount > 0 && /* @__PURE__ */ jsxDEV2("span", {
+                      activeAlertsCount > 0 && alertsEnabled && /* @__PURE__ */ jsxDEV2("span", {
                         style: {
                           position: "absolute",
                           top: 6,
@@ -540,21 +545,21 @@ function Header({
                       /* @__PURE__ */ jsxDEV2("button", {
                         type: "button",
                         role: "menuitem",
-                        onClick: onRequestNotificationPermission,
+                        onClick: handleAlertsClick,
                         className: "app-menu-item",
                         "data-testid": "notification-permission-btn",
-                        title: `Notifications: ${notificationPermission}`,
+                        title: `Notifications: ${notificationPermission === "granted" ? alertsEnabled ? "Enabled" : "Disabled" : notificationPermission}`,
                         children: [
                           /* @__PURE__ */ jsxDEV2("span", {
                             style: { display: "inline-flex", alignItems: "center", gap: 6 },
                             children: [
                               /* @__PURE__ */ jsxDEV2("span", {
-                                children: notificationPermission === "granted" ? "\uD83D\uDD14" : notificationPermission === "denied" ? "\uD83D\uDD15" : "\uD83D\uDD14"
+                                children: notificationPermission === "granted" ? alertsEnabled ? "\uD83D\uDD14" : "\uD83D\uDD15" : notificationPermission === "denied" ? "\uD83D\uDD15" : "\uD83D\uDD14"
                               }, undefined, false, undefined, this),
                               /* @__PURE__ */ jsxDEV2("span", {
                                 children: "Alerts"
                               }, undefined, false, undefined, this),
-                              activeAlertsCount > 0 && /* @__PURE__ */ jsxDEV2("span", {
+                              activeAlertsCount > 0 && alertsEnabled && /* @__PURE__ */ jsxDEV2("span", {
                                 className: "filter-count-badge",
                                 style: { backgroundColor: "var(--theme-red)", color: "#fff" },
                                 "data-testid": "alerts-count-badge",
@@ -563,8 +568,8 @@ function Header({
                             ]
                           }, undefined, true, undefined, this),
                           /* @__PURE__ */ jsxDEV2("span", {
-                            style: { fontSize: 12, color: notificationPermission === "granted" ? "var(--theme-green)" : notificationPermission === "denied" ? "var(--theme-red)" : "var(--theme-text-muted)" },
-                            children: notificationPermission === "granted" ? "Enabled" : notificationPermission === "denied" ? "Blocked" : "Enable"
+                            style: { fontSize: 12, color: notificationPermission === "granted" ? alertsEnabled ? "var(--theme-green)" : "var(--theme-text-muted)" : notificationPermission === "denied" ? "var(--theme-red)" : "var(--theme-text-muted)" },
+                            children: notificationPermission === "granted" ? alertsEnabled ? "Enabled" : "Disabled" : notificationPermission === "denied" ? "Blocked" : "Enable"
                           }, undefined, false, undefined, this)
                         ]
                       }, undefined, true, undefined, this),
@@ -643,6 +648,18 @@ function Header({
                         className: "app-menu-item",
                         style: { color: "var(--theme-red)" },
                         children: "Sign Out"
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsxDEV2("div", {
+                        style: { height: 1, backgroundColor: "var(--theme-border)", margin: "2px 0" }
+                      }, undefined, false, undefined, this),
+                      /* @__PURE__ */ jsxDEV2("button", {
+                        type: "button",
+                        role: "menuitem",
+                        onClick: () => setMenuOpen(false),
+                        className: "app-menu-item",
+                        style: { justifyContent: "center", color: "var(--theme-text-muted)", fontSize: 12 },
+                        "data-testid": "close-settings-menu-btn",
+                        children: "Close Menu"
                       }, undefined, false, undefined, this)
                     ]
                   }, undefined, true, undefined, this)
@@ -1922,6 +1939,80 @@ test("Header mounts, handles cadence selection, alert permissions, and export dr
     jsonBtnAfterReopen.click();
   });
   assert.equal(jsonExportTriggered, true);
+  await act(async () => {
+    menuBtn.click();
+  });
+  const closeMenuBtn = container.querySelector('[data-testid="close-settings-menu-btn"]');
+  assert.ok(closeMenuBtn);
+  await act(async () => {
+    closeMenuBtn.click();
+  });
+  assert.equal(container.querySelector('[data-testid="close-settings-menu-btn"]'), null);
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
+});
+test("Header defaults auto-refresh cadence to 60s and handles alert toggle state", async () => {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const root = createRoot(container);
+  let alertsToggled = false;
+  await act(async () => {
+    root.render(/* @__PURE__ */ jsxDEV7(Header, {
+      activeTab: "quotas",
+      onTabChange: () => {},
+      theme: "light",
+      onToggleTheme: () => {},
+      onRefresh: () => {},
+      onLogout: () => {},
+      refreshing: false,
+      lastSyncAt: new Date().toISOString(),
+      accountsCount: 5,
+      notificationPermission: "granted",
+      alertsEnabled: true,
+      onToggleAlerts: () => {
+        alertsToggled = true;
+      },
+      activeAlertsCount: 1
+    }, undefined, false, undefined, this));
+  });
+  const menuBtn = container.querySelector('[data-testid="settings-menu-btn"]');
+  assert.ok(menuBtn);
+  await act(async () => {
+    menuBtn.click();
+  });
+  const cadenceSelect = container.querySelector('[data-testid="cadence-selector"]');
+  assert.ok(cadenceSelect);
+  assert.equal(cadenceSelect.value, "60s");
+  const notifBtn = container.querySelector('[data-testid="notification-permission-btn"]');
+  assert.ok(notifBtn);
+  assert.match(notifBtn.textContent, /Enabled/);
+  assert.ok(container.querySelector('[data-testid="alerts-count-badge"]'));
+  await act(async () => {
+    notifBtn.click();
+  });
+  assert.equal(alertsToggled, true);
+  await act(async () => {
+    root.render(/* @__PURE__ */ jsxDEV7(Header, {
+      activeTab: "quotas",
+      onTabChange: () => {},
+      theme: "light",
+      onToggleTheme: () => {},
+      onRefresh: () => {},
+      onLogout: () => {},
+      refreshing: false,
+      lastSyncAt: new Date().toISOString(),
+      accountsCount: 5,
+      notificationPermission: "granted",
+      alertsEnabled: false,
+      activeAlertsCount: 1
+    }, undefined, false, undefined, this));
+  });
+  const disabledNotifBtn = container.querySelector('[data-testid="notification-permission-btn"]');
+  assert.ok(disabledNotifBtn);
+  assert.match(disabledNotifBtn.textContent, /Disabled/);
+  assert.equal(container.querySelector('[data-testid="alerts-count-badge"]'), null);
   await act(async () => {
     root.unmount();
   });

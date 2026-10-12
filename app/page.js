@@ -47,11 +47,21 @@ export default function DashboardPage() {
         return saved;
       }
     }
-    return 'off';
+    return '60s';
   });
 
   const [notificationPermission, setNotificationPermission] = useState(() => {
     return getNotificationPermission();
+  });
+
+  const [alertsEnabled, setAlertsEnabled] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('quota_alerts_enabled');
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    }
+    return true;
   });
 
   const handleCadenceChange = (val) => {
@@ -61,10 +71,29 @@ export default function DashboardPage() {
     }
   };
 
-  const handleRequestNotificationPermission = async () => {
-    const perm = await requestNotificationPermission();
-    setNotificationPermission(perm);
+  const handleToggleAlerts = async () => {
+    const currentPerm = getNotificationPermission();
+    if (currentPerm !== 'granted') {
+      const perm = await requestNotificationPermission();
+      setNotificationPermission(perm);
+      if (perm === 'granted') {
+        setAlertsEnabled(true);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('quota_alerts_enabled', 'true');
+        }
+      }
+    } else {
+      setAlertsEnabled((prev) => {
+        const next = !prev;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('quota_alerts_enabled', String(next));
+        }
+        return next;
+      });
+    }
   };
+
+  const handleRequestNotificationPermission = handleToggleAlerts;
 
   const intervalSec = useMemo(() => {
     switch (cadence) {
@@ -275,13 +304,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!auth.authenticated) return;
-    const notifyFn = notificationPermission === 'granted' && typeof Notification !== 'undefined'
+    const notifyFn = alertsEnabled && notificationPermission === 'granted' && typeof Notification !== 'undefined'
       ? (title, opts) => new Notification(title, opts)
       : null;
     checkAccountsForAlerts(enrichedAccounts, alertedIncidentsRef.current, notifyFn);
-  }, [enrichedAccounts, notificationPermission, auth.authenticated]);
+  }, [enrichedAccounts, notificationPermission, alertsEnabled, auth.authenticated]);
 
   const activeAlertsCount = useMemo(() => {
+    if (!alertsEnabled) return 0;
     let count = 0;
     for (const acc of enrichedAccounts) {
       if (acc.effectiveStatus?.status === 'exhausted' || (acc.effectiveStatus?.reason || acc.quota?.reason) === 'PROVIDER_AUTH_REQUIRED') {
@@ -289,7 +319,7 @@ export default function DashboardPage() {
       }
     }
     return count;
-  }, [enrichedAccounts]);
+  }, [enrichedAccounts, alertsEnabled]);
 
   const handleExportCsv = () => {
     exportCsv(enrichedAccounts);
@@ -365,7 +395,9 @@ export default function DashboardPage() {
         cadence={cadence}
         onCadenceChange={handleCadenceChange}
         notificationPermission={notificationPermission}
-        onRequestNotificationPermission={handleRequestNotificationPermission}
+        onRequestNotificationPermission={handleToggleAlerts}
+        alertsEnabled={alertsEnabled}
+        onToggleAlerts={handleToggleAlerts}
         activeAlertsCount={activeAlertsCount}
         onExportCsv={handleExportCsv}
         onExportJson={handleExportJson}

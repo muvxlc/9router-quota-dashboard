@@ -119,6 +119,100 @@ test('Header mounts, handles cadence selection, alert permissions, and export dr
   });
   assert.equal(jsonExportTriggered, true);
 
+  // Re-open settings menu and verify Close Menu button closes popover
+  await act(async () => {
+    menuBtn.click();
+  });
+  const closeMenuBtn = container.querySelector('[data-testid="close-settings-menu-btn"]');
+  assert.ok(closeMenuBtn);
+  await act(async () => {
+    closeMenuBtn.click();
+  });
+  assert.equal(container.querySelector('[data-testid="close-settings-menu-btn"]'), null);
+
+  await act(async () => {
+    root.unmount();
+  });
+  container.remove();
+});
+
+test('Header defaults auto-refresh cadence to 60s and handles alert toggle state', async () => {
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const root = createRoot(container);
+
+  let alertsToggled = false;
+
+  await act(async () => {
+    root.render(
+      <Header
+        activeTab="quotas"
+        onTabChange={() => {}}
+        theme="light"
+        onToggleTheme={() => {}}
+        onRefresh={() => {}}
+        onLogout={() => {}}
+        refreshing={false}
+        lastSyncAt={new Date().toISOString()}
+        accountsCount={5}
+        notificationPermission="granted"
+        alertsEnabled={true}
+        onToggleAlerts={() => {
+          alertsToggled = true;
+        }}
+        activeAlertsCount={1}
+      />
+    );
+  });
+
+  const menuBtn = container.querySelector('[data-testid="settings-menu-btn"]');
+  assert.ok(menuBtn);
+  await act(async () => {
+    menuBtn.click();
+  });
+
+  // Verify default cadence is 60s
+  const cadenceSelect = container.querySelector('[data-testid="cadence-selector"]');
+  assert.ok(cadenceSelect);
+  assert.equal(cadenceSelect.value, '60s');
+
+  // Verify alert toggle button shows Enabled and triggers toggle
+  const notifBtn = container.querySelector('[data-testid="notification-permission-btn"]');
+  assert.ok(notifBtn);
+  assert.match(notifBtn.textContent, /Enabled/);
+  assert.ok(container.querySelector('[data-testid="alerts-count-badge"]'));
+
+  await act(async () => {
+    notifBtn.click();
+  });
+  assert.equal(alertsToggled, true);
+
+  // Render disabled state
+  await act(async () => {
+    root.render(
+      <Header
+        activeTab="quotas"
+        onTabChange={() => {}}
+        theme="light"
+        onToggleTheme={() => {}}
+        onRefresh={() => {}}
+        onLogout={() => {}}
+        refreshing={false}
+        lastSyncAt={new Date().toISOString()}
+        accountsCount={5}
+        notificationPermission="granted"
+        alertsEnabled={false}
+        activeAlertsCount={1}
+      />
+    );
+  });
+
+  const disabledNotifBtn = container.querySelector('[data-testid="notification-permission-btn"]');
+  assert.ok(disabledNotifBtn);
+  assert.match(disabledNotifBtn.textContent, /Disabled/);
+  // Badge and red dot hidden when disabled
+  assert.equal(container.querySelector('[data-testid="alerts-count-badge"]'), null);
+
   await act(async () => {
     root.unmount();
   });

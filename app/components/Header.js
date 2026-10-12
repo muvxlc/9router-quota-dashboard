@@ -26,10 +26,12 @@ export default function Header({
   onSortChange,
   onResetFilters,
   accountsCount = 0,
-  cadence = 'off',
+  cadence = '60s',
   onCadenceChange,
   notificationPermission = 'default',
   onRequestNotificationPermission,
+  alertsEnabled = true,
+  onToggleAlerts,
   activeAlertsCount = 0,
   onExportCsv,
   onExportJson,
@@ -38,6 +40,7 @@ export default function Header({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const menuRef = useRef(null);
   const filtersRef = useRef(null);
+  const handleAlertsClick = onToggleAlerts || onRequestNotificationPermission;
 
   const syncLabel = lastSyncAt
     ? `Updated ${new Date(lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}`
@@ -61,9 +64,11 @@ export default function Header({
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
@@ -228,7 +233,7 @@ export default function Header({
               style={{ position: 'relative' }}
             >
               •••
-              {activeAlertsCount > 0 && (
+              {activeAlertsCount > 0 && alertsEnabled && (
                 <span
                   style={{
                     position: 'absolute',
@@ -276,15 +281,15 @@ export default function Header({
                 <button
                   type="button"
                   role="menuitem"
-                  onClick={onRequestNotificationPermission}
+                  onClick={handleAlertsClick}
                   className="app-menu-item"
                   data-testid="notification-permission-btn"
-                  title={`Notifications: ${notificationPermission}`}
+                  title={`Notifications: ${notificationPermission === 'granted' ? (alertsEnabled ? 'Enabled' : 'Disabled') : notificationPermission}`}
                 >
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <span>{notificationPermission === 'granted' ? '🔔' : notificationPermission === 'denied' ? '🔕' : '🔔'}</span>
+                    <span>{notificationPermission === 'granted' ? (alertsEnabled ? '🔔' : '🔕') : notificationPermission === 'denied' ? '🔕' : '🔔'}</span>
                     <span>Alerts</span>
-                    {activeAlertsCount > 0 && (
+                    {activeAlertsCount > 0 && alertsEnabled && (
                       <span
                         className="filter-count-badge"
                         style={{ backgroundColor: 'var(--theme-red)', color: '#fff' }}
@@ -294,8 +299,8 @@ export default function Header({
                       </span>
                     )}
                   </span>
-                  <span style={{ fontSize: 12, color: notificationPermission === 'granted' ? 'var(--theme-green)' : notificationPermission === 'denied' ? 'var(--theme-red)' : 'var(--theme-text-muted)' }}>
-                    {notificationPermission === 'granted' ? 'Enabled' : notificationPermission === 'denied' ? 'Blocked' : 'Enable'}
+                  <span style={{ fontSize: 12, color: notificationPermission === 'granted' ? (alertsEnabled ? 'var(--theme-green)' : 'var(--theme-text-muted)') : notificationPermission === 'denied' ? 'var(--theme-red)' : 'var(--theme-text-muted)' }}>
+                    {notificationPermission === 'granted' ? (alertsEnabled ? 'Enabled' : 'Disabled') : notificationPermission === 'denied' ? 'Blocked' : 'Enable'}
                   </span>
                 </button>
 
@@ -362,6 +367,20 @@ export default function Header({
                   style={{ color: 'var(--theme-red)' }}
                 >
                   Sign Out
+                </button>
+
+                <div style={{ height: 1, backgroundColor: 'var(--theme-border)', margin: '2px 0' }} />
+
+                {/* Close Menu */}
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => setMenuOpen(false)}
+                  className="app-menu-item"
+                  style={{ justifyContent: 'center', color: 'var(--theme-text-muted)', fontSize: 12 }}
+                  data-testid="close-settings-menu-btn"
+                >
+                  Close Menu
                 </button>
               </div>
             )}
