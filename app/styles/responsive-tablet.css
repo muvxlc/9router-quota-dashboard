@@ -73,6 +73,30 @@
     padding: 8px 16px;
     box-sizing: border-box;
   }
+  .live-models-container {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+  .live-models-main-grid {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .live-models-card {
+    height: 100%;
+    min-height: 0;
+  }
+  .live-models-card-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .live-models-empty-state {
+    height: 100%;
+    min-height: 0;
+  }
 }
 
 /* --- Tablet / Small Landscape (768px - 999px) --- */
@@ -174,5 +198,26 @@
   }
   .pp-columns-legend {
     display: flex;
+  }
+  .live-models-container {
+    height: auto;
+    overflow: visible;
+  }
+  .live-models-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .live-models-main-grid {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+  .live-models-card {
+    min-height: 300px;
+  }
+  .live-models-card-body {
+    max-height: 480px;
+  }
+  .live-models-empty-state {
+    min-height: 200px;
   }
 }

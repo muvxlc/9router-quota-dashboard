@@ -93,5 +93,22 @@ test('LiveModelsView.js renders full telemetry dashboard with active and recent 
   assert.ok(viewSrc.includes('Recently Completed Stream'));
   assert.ok(viewSrc.includes('FILTER MODEL OR ACCOUNT'));
   assert.ok(viewSrc.includes('createLiveModelsSubscription'));
+  assert.ok(viewSrc.includes('live-models-container'));
+  assert.ok(viewSrc.includes('live-models-empty-state'));
+  assert.ok(viewSrc.includes('live-models-main-grid'));
 });
+
+test('Live models layout classes support desktop fullscreen stretch and responsive mobile', () => {
+  const gridCss = fs.readFileSync(path.join(projectRoot, 'app/styles/grid.css'), 'utf8');
+  assert.match(gridCss, /\.live-models-container/);
+  assert.match(gridCss, /\.live-models-main-grid/);
+  assert.match(gridCss, /\.live-models-empty-state/);
+
+  const tabletCss = fs.readFileSync(path.join(projectRoot, 'app/styles/responsive-tablet.css'), 'utf8');
+  assert.match(tabletCss, /\.live-models-container\s*\{[^}]*height:\s*100%/s);
+
+  const mobileCss = fs.readFileSync(path.join(projectRoot, 'app/styles/responsive-mobile.css'), 'utf8');
+  assert.match(mobileCss, /\.live-models-container\s*\{[^}]*height:\s*auto/s);
+});
+
 

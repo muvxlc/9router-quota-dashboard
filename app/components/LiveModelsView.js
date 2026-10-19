@@ -134,16 +134,16 @@ export default function LiveModelsView({
   }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className="live-models-container">
       <div
-        className="pp-card"
+        className="pp-card live-models-banner"
         style={{
-          padding: '14px 18px',
+          padding: '10px 16px',
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: 12,
+          gap: 10,
         }}
       >
         <div>
@@ -159,20 +159,20 @@ export default function LiveModelsView({
               }}
               aria-hidden="true"
             />
-            <h2 style={{ fontSize: 16, fontWeight: 700, textTransform: 'uppercase', letterSpacing: -0.01, margin: 0 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 700, textTransform: 'uppercase', letterSpacing: -0.01, margin: 0 }}>
               9Router Live Models
             </h2>
           </div>
-          <p style={{ fontSize: 12, color: 'var(--theme-text-muted)', margin: '3px 0 0 0' }}>
+          <p style={{ fontSize: 11, color: 'var(--theme-text-muted)', margin: '2px 0 0 0' }}>
             Scope: <strong>Real-Time Stream Telemetry</strong> (active concurrent requests & completed model events)
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span className={`status-pill ${statusMeta.pillClass}`}>
             {isPaused ? 'PAUSED' : statusMeta.text}
           </span>
-          <span className="live-strip-time tabular-nums" style={{ fontSize: 12, color: 'var(--theme-text-muted)' }}>
+          <span className="live-strip-time tabular-nums" style={{ fontSize: 11, color: 'var(--theme-text-muted)' }}>
             {formatLiveTimestamp(receivedAt, { status, connectedAt })}
           </span>
           <button
@@ -180,8 +180,8 @@ export default function LiveModelsView({
             className="nav-link-btn"
             onClick={() => setIsPaused((prev) => !prev)}
             style={{
-              padding: '6px 12px',
-              fontSize: 12,
+              padding: '4px 10px',
+              fontSize: 11,
               border: '1px solid var(--theme-border)',
               background: isPaused ? 'var(--theme-orange)' : 'var(--theme-canvas-subtle)',
               color: isPaused ? '#fff' : 'var(--theme-text)',
@@ -195,74 +195,68 @@ export default function LiveModelsView({
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 10,
-        }}
-      >
-        <div className="pp-card" style={{ padding: '14px 18px' }}>
-          <span style={{ fontSize: 12, color: 'var(--theme-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+      <div className="live-models-kpi-grid">
+        <div className="pp-card" style={{ padding: '10px 14px' }}>
+          <span style={{ fontSize: 11, color: 'var(--theme-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
             In-Flight Requests
           </span>
-          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4, color: totalCount > 0 ? 'var(--theme-orange)' : 'var(--theme-text)' }} className="tabular-nums">
+          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2, color: totalCount > 0 ? 'var(--theme-orange)' : 'var(--theme-text)' }} className="tabular-nums">
             {totalCount}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--theme-text-muted)', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
             Across {activeModels.length} active model{activeModels.length === 1 ? '' : 's'}
           </div>
         </div>
 
-        <div className="pp-card" style={{ padding: '14px 18px' }}>
-          <span style={{ fontSize: 12, color: 'var(--theme-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+        <div className="pp-card" style={{ padding: '10px 14px' }}>
+          <span style={{ fontSize: 11, color: 'var(--theme-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
             Active Models
           </span>
-          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }} className="tabular-nums">
+          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2 }} className="tabular-nums">
             {activeModels.length}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--theme-text-muted)', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
             Currently receiving requests
           </div>
         </div>
 
-        <div className="pp-card" style={{ padding: '14px 18px' }}>
-          <span style={{ fontSize: 12, color: 'var(--theme-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+        <div className="pp-card" style={{ padding: '10px 14px' }}>
+          <span style={{ fontSize: 11, color: 'var(--theme-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
             Active Providers
           </span>
-          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }} className="tabular-nums">
+          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2 }} className="tabular-nums">
             {activeProvidersCount}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--theme-text-muted)', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
             {activeProvidersCount > 0 ? uniqueProviders.slice(0, 3).join(', ') : 'None'}
           </div>
         </div>
 
-        <div className="pp-card" style={{ padding: '14px 18px' }}>
-          <span style={{ fontSize: 12, color: 'var(--theme-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+        <div className="pp-card" style={{ padding: '10px 14px' }}>
+          <span style={{ fontSize: 11, color: 'var(--theme-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
             Recent Completions
           </span>
-          <div style={{ fontSize: 24, fontWeight: 700, marginTop: 4 }} className="tabular-nums">
+          <div style={{ fontSize: 20, fontWeight: 700, marginTop: 2 }} className="tabular-nums">
             {accumulatedRecent.length > 0 ? accumulatedRecent.length : (streamState.recentRequests || []).length}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--theme-text-muted)', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
             History buffer (max 30)
           </div>
         </div>
       </div>
 
       <div
-        className="pp-card"
+        className="pp-card live-models-filter-bar"
         style={{
-          padding: '10px 16px',
+          padding: '8px 14px',
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: 10,
+          gap: 8,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 240px', maxWidth: 360, position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 220px', maxWidth: 340, position: 'relative' }}>
           <input
             type="text"
             value={search}
@@ -272,7 +266,7 @@ export default function LiveModelsView({
             aria-label="Filter active models and recent requests"
             style={{
               width: '100%',
-              padding: '7px 28px 7px 10px',
+              padding: '6px 26px 6px 10px',
               fontFamily: 'var(--font-mono)',
               fontSize: 12,
               background: 'var(--theme-canvas-subtle)',
@@ -310,7 +304,7 @@ export default function LiveModelsView({
             type="button"
             onClick={() => setProviderFilter('all')}
             style={{
-              padding: '4px 10px',
+              padding: '3px 8px',
               fontSize: 11,
               fontFamily: 'var(--font-mono)',
               fontWeight: 600,
@@ -330,7 +324,7 @@ export default function LiveModelsView({
               type="button"
               onClick={() => setProviderFilter(p)}
               style={{
-                padding: '4px 10px',
+                padding: '3px 8px',
                 fontSize: 11,
                 fontFamily: 'var(--font-mono)',
                 fontWeight: 600,
@@ -348,128 +342,119 @@ export default function LiveModelsView({
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: 16,
-        }}
-      >
-        <div className="pp-card" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, textTransform: 'uppercase', margin: 0, letterSpacing: '0.02em' }}>
+      <div className="live-models-main-grid">
+        <div className="pp-card live-models-card">
+          <div className="live-models-card-header">
+            <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', margin: 0, letterSpacing: '0.02em' }}>
               Active Models In Flight ({filteredActive.length})
             </h3>
             {totalCount > 0 && (
-              <span className="live-model-count tabular-nums" style={{ fontSize: 12 }}>
+              <span className="live-model-count tabular-nums" style={{ fontSize: 11 }}>
                 {totalCount} total request{totalCount === 1 ? '' : 's'}
               </span>
             )}
           </div>
 
-          {filteredActive.length === 0 ? (
-            <div
-              style={{
-                padding: '24px 16px',
-                backgroundColor: 'var(--theme-canvas-subtle)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--theme-text-muted)',
-                fontSize: 13,
-                textAlign: 'center',
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              {activeModels.length === 0
-                ? 'No active model requests in flight at this moment.'
-                : 'No active models match the selected filter.'}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {filteredActive.map((item, idx) => {
-                const pct = totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0;
-                return (
-                  <div
-                    key={`active-view-${item.model}-${item.provider}-${idx}`}
-                    style={{
-                      padding: '12px 16px',
-                      backgroundColor: 'var(--theme-canvas-subtle)',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--theme-border)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 8,
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--theme-text-main)' }}>
-                            {item.model}
-                          </span>
-                          <span
-                            className="acc-tag"
-                            style={{
-                              background: 'var(--theme-dark)',
-                              color: '#fff',
-                              padding: '2px 6px',
-                              borderRadius: 3,
-                              fontSize: 11,
-                              fontWeight: 600,
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            {item.provider}
-                          </span>
-                        </div>
-                        {item.account && (
-                          <div style={{ fontSize: 12, color: 'var(--theme-text-muted)', marginTop: 4 }}>
-                            Account: {maskEmail(item.account)}
-                          </div>
-                        )}
-                      </div>
-
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <span className="live-model-count tabular-nums" style={{ fontSize: 14, fontWeight: 700 }}>
-                          {item.count} req{item.count === 1 ? '' : 's'}
-                        </span>
-                        <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
-                          {pct}% share
-                        </div>
-                      </div>
-                    </div>
-
+          <div className="live-models-card-body">
+            {filteredActive.length === 0 ? (
+              <div className="live-models-empty-state">
+                <div style={{ fontSize: 24, marginBottom: 8, opacity: 0.5 }}>⚡</div>
+                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--theme-text-main)', marginBottom: 4 }}>
+                  {activeModels.length === 0
+                    ? 'No active model requests in flight at this moment.'
+                    : 'No active models match the selected filter.'}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--theme-text-muted)' }}>
+                  {activeModels.length === 0
+                    ? 'Incoming requests from 9Router will appear here in real time.'
+                    : 'Try resetting the search or provider filter.'}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {filteredActive.map((item, idx) => {
+                  const pct = totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0;
+                  return (
                     <div
+                      key={`active-view-${item.model}-${item.provider}-${idx}`}
                       style={{
-                        height: 4,
-                        width: '100%',
-                        backgroundColor: 'var(--theme-border)',
-                        borderRadius: 2,
-                        overflow: 'hidden',
+                        padding: '12px 16px',
+                        backgroundColor: 'var(--theme-canvas-subtle)',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--theme-border)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 8,
                       }}
                     >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--theme-text-main)' }}>
+                              {item.model}
+                            </span>
+                            <span
+                              className="acc-tag"
+                              style={{
+                                background: 'var(--theme-dark)',
+                                color: '#fff',
+                                padding: '2px 6px',
+                                borderRadius: 3,
+                                fontSize: 11,
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              {item.provider}
+                            </span>
+                          </div>
+                          {item.account && (
+                            <div style={{ fontSize: 12, color: 'var(--theme-text-muted)', marginTop: 4 }}>
+                              Account: {maskEmail(item.account)}
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <span className="live-model-count tabular-nums" style={{ fontSize: 14, fontWeight: 700 }}>
+                            {item.count} req{item.count === 1 ? '' : 's'}
+                          </span>
+                          <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
+                            {pct}% share
+                          </div>
+                        </div>
+                      </div>
+
                       <div
                         style={{
-                          height: '100%',
-                          width: `${pct}%`,
-                          backgroundColor: 'var(--theme-orange)',
+                          height: 4,
+                          width: '100%',
+                          backgroundColor: 'var(--theme-border)',
                           borderRadius: 2,
-                          transition: 'width 0.3s ease',
+                          overflow: 'hidden',
                         }}
-                      />
+                      >
+                        <div
+                          style={{
+                            height: '100%',
+                            width: `${pct}%`,
+                            backgroundColor: 'var(--theme-orange)',
+                            borderRadius: 2,
+                            transition: 'width 0.3s ease',
+                          }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="pp-card" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, textTransform: 'uppercase', margin: 0, letterSpacing: '0.02em' }}>
+        <div className="pp-card live-models-card">
+          <div className="live-models-card-header">
+            <h3 style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', margin: 0, letterSpacing: '0.02em' }}>
               Recently Completed Stream ({filteredRecent.length})
             </h3>
             {accumulatedRecent.length > 0 && (
@@ -490,108 +475,103 @@ export default function LiveModelsView({
             )}
           </div>
 
-          {filteredRecent.length === 0 ? (
-            <div
-              style={{
-                padding: '24px 16px',
-                backgroundColor: 'var(--theme-canvas-subtle)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--theme-text-muted)',
-                fontSize: 13,
-                textAlign: 'center',
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              No recently completed requests recorded yet.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 600, overflowY: 'auto' }}>
-              {filteredRecent.map((item, idx) => (
-                <div
-                  key={`recent-view-${item.model}-${item.provider}-${idx}-${item.timestamp || ''}`}
-                  style={{
-                    padding: '10px 14px',
-                    backgroundColor: 'var(--theme-canvas-subtle)',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--theme-border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                  }}
-                >
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--theme-text-main)' }}>
-                        {item.model}
-                      </span>
+          <div className="live-models-card-body">
+            {filteredRecent.length === 0 ? (
+              <div className="live-models-empty-state">
+                <div style={{ fontSize: 24, marginBottom: 8, opacity: 0.5 }}>📋</div>
+                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--theme-text-main)', marginBottom: 4 }}>
+                  No recently completed requests recorded yet.
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--theme-text-muted)' }}>
+                  Completed stream frames will be logged here with status and timestamps.
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {filteredRecent.map((item, idx) => (
+                  <div
+                    key={`recent-view-${item.model}-${item.provider}-${idx}-${item.timestamp || ''}`}
+                    style={{
+                      padding: '10px 14px',
+                      backgroundColor: 'var(--theme-canvas-subtle)',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--theme-border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--theme-text-main)' }}>
+                          {item.model}
+                        </span>
+                        <span
+                          className="acc-tag"
+                          style={{
+                            background: 'var(--theme-dark)',
+                            color: '#fff',
+                            padding: '1px 5px',
+                            borderRadius: 3,
+                            fontSize: 10,
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          {item.provider}
+                        </span>
+                      </div>
+                      {item.account && (
+                        <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
+                          {maskEmail(item.account)}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <span
-                        className="acc-tag"
                         style={{
-                          background: 'var(--theme-dark)',
-                          color: '#fff',
-                          padding: '1px 5px',
-                          borderRadius: 3,
-                          fontSize: 10,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '2px 6px',
+                          borderRadius: 'var(--radius-sm)',
+                          fontSize: 11,
                           fontWeight: 600,
                           textTransform: 'uppercase',
+                          backgroundColor: item.status === 'error' ? 'var(--theme-red-tint)' : 'var(--theme-green-tint)',
+                          color: item.status === 'error' ? 'var(--theme-red)' : 'var(--theme-green)',
                         }}
                       >
-                        {item.provider}
+                        {item.status || 'done'}
                       </span>
+                      {item.timestamp && (
+                        <div
+                          style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}
+                          className="tabular-nums"
+                          title={new Date(item.timestamp).toLocaleString()}
+                        >
+                          {getRelativeTime(item.timestamp)}
+                        </div>
+                      )}
                     </div>
-                    {item.account && (
-                      <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
-                        {maskEmail(item.account)}
-                      </div>
-                    )}
                   </div>
-
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        padding: '2px 6px',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: 11,
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        backgroundColor: item.status === 'error' ? 'var(--theme-red-tint)' : 'var(--theme-green-tint)',
-                        color: item.status === 'error' ? 'var(--theme-red)' : 'var(--theme-green)',
-                      }}
-                    >
-                      {item.status || 'done'}
-                    </span>
-                    {item.timestamp && (
-                      <div
-                        style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}
-                        className="tabular-nums"
-                        title={new Date(item.timestamp).toLocaleString()}
-                      >
-                        {getRelativeTime(item.timestamp)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div
-        className="pp-card"
+        className="pp-card live-models-footer"
         style={{
-          padding: '10px 16px',
+          padding: '8px 14px',
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: 12,
+          gap: 8,
           fontSize: 12,
           color: 'var(--theme-text-muted)',
         }}

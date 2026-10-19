@@ -272,4 +272,25 @@
     max-width: calc(100vw - 24px);
     right: 0;
   }
+  .live-models-container {
+    height: auto;
+    overflow: visible;
+  }
+  .live-models-kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .live-models-main-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .live-models-card {
+    min-height: 260px;
+  }
+  .live-models-card-body {
+    max-height: 380px;
+  }
+  .live-models-empty-state {
+    padding: 24px 12px;
+  }
 }
