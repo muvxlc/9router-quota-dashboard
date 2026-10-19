@@ -124,6 +124,15 @@ export default function Header({
           >
             Usage
           </button>
+          <button
+            type="button"
+            className={`nav-link-btn ${activeTab === 'live' ? 'active' : ''}`}
+            role="tab"
+            aria-selected={activeTab === 'live'}
+            onClick={() => onTabChange('live')}
+          >
+            Live Models
+          </button>
         </div>
 
         {/* Action Tools */}

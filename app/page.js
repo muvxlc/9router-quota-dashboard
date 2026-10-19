@@ -5,6 +5,7 @@ import Header from './components/Header.js';
 import LiveModelsStrip from './components/LiveModelsStrip.js';
 import QuotaTable from './components/QuotaTable.js';
 import UsageView from './components/UsageView.js';
+import LiveModelsView from './components/LiveModelsView.js';
 import DetailSheet from './components/DetailSheet.js';
 import LoginModal from './components/LoginModal.js';
 import { fetchAuthStatus, loginWithPassword, logout, SessionExpiredError, toggleConnectionGovernor } from '../lib/client/api.js';
@@ -413,7 +414,7 @@ export default function DashboardPage() {
             onToggleExpandProvider={handleToggleExpandProvider}
           />
         </main>
-      ) : (
+      ) : activeTab === 'usage' ? (
         <main>
           <UsageView
             stats={stats}
@@ -426,6 +427,10 @@ export default function DashboardPage() {
               loadStats(period);
             }}
           />
+        </main>
+      ) : (
+        <main>
+          <LiveModelsView onSessionLoss={handleSessionLoss} />
         </main>
       )}
 

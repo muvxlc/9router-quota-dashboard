@@ -44,13 +44,17 @@
   }
   .nav-links {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     width: 100%;
     padding: 3px;
+    gap: 4px;
   }
   .nav-link-btn {
     justify-content: center;
     min-height: 44px;
+    font-size: 11px;
+    padding: 6px 2px;
+    white-space: nowrap;
   }
 
   /* Controls: search full width, then active/filters/refresh row */

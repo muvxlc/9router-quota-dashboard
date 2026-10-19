@@ -72,3 +72,26 @@ test('LiveModelsModal.js renders distinct Active and Recently completed sections
     'LiveModelsModal must provide empty state for recently completed requests'
   );
 });
+
+test('Header.js and page.js support full-screen Live Models navigation tab', () => {
+  const headerSrc = fs.readFileSync(path.join(projectRoot, 'app/components/Header.js'), 'utf8');
+  assert.match(headerSrc, /activeTab\s*===\s*'live'/);
+  assert.match(headerSrc, /Live Models/);
+
+  const pageSrc = fs.readFileSync(path.join(projectRoot, 'app/page.js'), 'utf8');
+  assert.match(pageSrc, /import LiveModelsView from '\.\/components\/LiveModelsView\.js'/);
+  assert.match(pageSrc, /<LiveModelsView/);
+});
+
+test('LiveModelsView.js renders full telemetry dashboard with active and recent sections', () => {
+  const viewSrc = fs.readFileSync(path.join(projectRoot, 'app/components/LiveModelsView.js'), 'utf8');
+
+  assert.ok(viewSrc.includes('In-Flight Requests'));
+  assert.ok(viewSrc.includes('Active Models'));
+  assert.ok(viewSrc.includes('Recent Completions'));
+  assert.ok(viewSrc.includes('Active Models In Flight'));
+  assert.ok(viewSrc.includes('Recently Completed Stream'));
+  assert.ok(viewSrc.includes('FILTER MODEL OR ACCOUNT'));
+  assert.ok(viewSrc.includes('createLiveModelsSubscription'));
+});
+
