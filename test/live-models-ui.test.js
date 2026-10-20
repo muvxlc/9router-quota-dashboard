@@ -111,4 +111,20 @@ test('Live models layout classes support desktop fullscreen stretch and responsi
   assert.match(mobileCss, /\.live-models-container\s*\{[^}]*height:\s*auto/s);
 });
 
+test('Live models page renders compact codex quota cards from page state', () => {
+  const pageSrc = fs.readFileSync(path.join(projectRoot, 'app/page.js'), 'utf8');
+  assert.match(pageSrc, /const codexAccounts = useMemo\(/);
+  assert.match(pageSrc, /provider \|\| ''\)\.toLowerCase\(\) === 'codex'/);
+  assert.match(pageSrc, /<LiveModelsView[^>]*accounts=\{codexAccounts\}/s);
+
+  const viewSrc = fs.readFileSync(path.join(projectRoot, 'app/components/LiveModelsView.js'), 'utf8');
+  assert.match(viewSrc, /import QuotaCards from '\.\/QuotaCards\.js'/);
+  assert.match(viewSrc, /<QuotaCards accounts=\{accounts\} onSelectAccount=\{onSelectAccount\} \/>/);
+
+  const cardsSrc = fs.readFileSync(path.join(projectRoot, 'app/components/QuotaCards.js'), 'utf8');
+  assert.ok(cardsSrc.includes('QuotaWindowCell'));
+  assert.ok(cardsSrc.includes('calculateDepletionVelocity'));
+  assert.match(cardsSrc, /onSelectAccount\(acc\)/);
+});
+
 

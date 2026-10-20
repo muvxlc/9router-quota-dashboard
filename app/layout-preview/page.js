@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore } from 'react';
 import QuotaTable from '../components/QuotaTable.js';
+import QuotaCards from '../components/QuotaCards.js';
 
 const HOUR = 3600_000;
 
@@ -114,6 +115,9 @@ export default function LayoutPreviewPage() {
         </div>
       </div>
       <main>
+        <div className="live-models-container">
+          <QuotaCards accounts={groups[0].accounts} onSelectAccount={() => {}} />
+        </div>
         <QuotaTable groups={groups} onSelectAccount={() => {}} onToggleExpandProvider={() => {}} />
       </main>
     </>

@@ -8,11 +8,14 @@ import {
   getLiveStatusMeta,
 } from '../../lib/client/liveModels.js';
 import { maskEmail } from '../../lib/client/selectors.js';
+import QuotaCards from './QuotaCards.js';
 
 export default function LiveModelsView({
   url = '/api/live-models',
   onSessionLoss = () => {},
   customSubscription = null,
+  accounts = [],
+  onSelectAccount = () => {},
 }) {
   const [streamState, setStreamState] = useState({
     status: 'connecting',
@@ -247,6 +250,8 @@ export default function LiveModelsView({
           </div>
         </div>
       </div>
+
+      <QuotaCards accounts={accounts} onSelectAccount={onSelectAccount} />
 
       <div
         className="pp-card live-models-filter-bar"
