@@ -506,10 +506,20 @@ export default function LiveModelsView({
                     }}
                   >
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--theme-text-main)' }}>
-                          {item.model}
-                        </span>
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          fontSize: 13,
+                          color: 'var(--theme-text-main)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {item.model}
+                      </div>
+                      {/* ponytail: fixed two-line row - line 2 always holds provider + account */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, minWidth: 0 }}>
                         <span
                           className="acc-tag"
                           style={{
@@ -520,16 +530,31 @@ export default function LiveModelsView({
                             fontSize: 10,
                             fontWeight: 600,
                             textTransform: 'uppercase',
+                            flexShrink: 1,
+                            minWidth: 0,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
                           }}
                         >
                           {item.provider}
                         </span>
+                        {item.account && (
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: 'var(--theme-text-muted)',
+                              flexShrink: 2,
+                              minWidth: 0,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {maskEmail(item.account)}
+                          </span>
+                        )}
                       </div>
-                      {item.account && (
-                        <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
-                          {maskEmail(item.account)}
-                        </div>
-                      )}
                     </div>
 
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
