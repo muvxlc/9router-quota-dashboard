@@ -239,10 +239,17 @@
 }
 .quota-card .pp-quota-meta {
   font-size: 11px;
+  gap: 4px;
 }
 .quota-card .pp-quota-meta .reset,
 .quota-card .pp-quota-meta .used {
   font-size: 11px;
+}
+.quota-card .pp-quota-meta .used {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .quota-card .pp-tag-active,
 .quota-card .pp-tag-low,
