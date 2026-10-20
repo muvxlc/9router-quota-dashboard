@@ -11,8 +11,8 @@ import { defaultSessionStore } from '../lib/server/session.js';
 import { defaultUpstreamClient } from '../lib/server/upstream.js';
 import { buildSessionCookie } from '../lib/server/routeHelpers.js';
 
-test('UPSTREAM_BASE_URL defaults to https://9router.bangkhan.com', () => {
-  assert.equal(UPSTREAM_BASE_URL, 'https://9router.bangkhan.com');
+test('UPSTREAM_BASE_URL defaults to https://router.bangkhan.com', () => {
+  assert.equal(UPSTREAM_BASE_URL, 'https://router.bangkhan.com');
 });
 
 // 2. Cookie decode safety

@@ -14,7 +14,7 @@ Deploy `quota-dashboard` as a Git-backed Stack managed by Komodo orchestrator.
 
 ## Prerequisites
 
-1. **Upstream 9router**: An upstream `9router` gateway instance reachable over HTTPS (defaults to `https://9router.bangkhan.com`). For local development, loopback HTTP (`http://127.0.0.1:20128`) is also permitted.
+1. **Upstream 9router**: An upstream `9router` gateway instance reachable over HTTPS (defaults to `https://router.bangkhan.com`). For local development, loopback HTTP (`http://127.0.0.1:20128`) is also permitted.
 2. **Reverse Proxy & TLS**: Komodo does not include an automatic reverse proxy. Public TLS termination for the dashboard must be handled by an external reverse proxy (Nginx Proxy Manager, Caddy, Nginx, or Traefik) on the same host or a dedicated reverse proxy host on the LAN.
 3. **DNS**: Public domain or subdomain (e.g. `quota.example.com`) pointing to the host's public IP.
 4. **Git Repository**: Project source pushed to a Git repository accessible by the Komodo Periphery agent.
@@ -48,7 +48,7 @@ Under the Stack **Environment** section, define:
 
 ```env
 APP_ORIGIN=https://quota.example.com
-UPSTREAM_BASE_URL=https://9router.bangkhan.com
+UPSTREAM_BASE_URL=https://router.bangkhan.com
 BIND_IP=172.16.32.91
 ```
 
@@ -57,7 +57,7 @@ BIND_IP=172.16.32.91
 **Configuration Notes**:
 - `APP_ORIGIN` (Required): Exact public HTTPS origin (protocol + host, no trailing slash, e.g. `https://quota.example.com`). Used for strict CSRF, Host header matching, and secure cookie flags.
 - `BIND_IP` (Required): The host IP address on the Komodo server to which Docker publishes port `20130` (e.g. `172.16.32.91` for LAN access by an external reverse proxy, or `127.0.0.1` for a local reverse proxy on the same host). The container internally listens on `0.0.0.0:20130`, but Docker maps only to this specific host IP interface. **Never bind to `0.0.0.0` on the host.**
-- `UPSTREAM_BASE_URL` (Optional): Upstream `9router` gateway URL (defaults to `https://9router.bangkhan.com` if omitted). This is non-secret public configuration.
+- `UPSTREAM_BASE_URL` (Optional): Upstream `9router` gateway URL (defaults to `https://router.bangkhan.com` if omitted). This is non-secret public configuration.
 - **Security Warning**: The dashboard login proxy transmits the operator password directly to `UPSTREAM_BASE_URL`. Only configure trusted, operator-owned `9router` origins over HTTPS. Plain HTTP is strictly rejected in production (only loopback HTTP like `http://127.0.0.1:20128` is permitted for development).
 - Do **not** set `SESSION_SECRET`: Sessions use in-memory crypto tokens.
 

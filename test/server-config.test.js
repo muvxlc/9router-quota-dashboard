@@ -4,17 +4,17 @@ import { spawnSync } from 'node:child_process';
 import { resolveUpstreamBaseUrl } from '../lib/server/configBaseUrl.js';
 import { UPSTREAM_BASE_URL } from '../lib/server/config.js';
 
-test('resolveUpstreamBaseUrl defaults to https://9router.bangkhan.com when unset or empty', () => {
-  assert.equal(resolveUpstreamBaseUrl(undefined), 'https://9router.bangkhan.com');
-  assert.equal(resolveUpstreamBaseUrl(null), 'https://9router.bangkhan.com');
-  assert.equal(resolveUpstreamBaseUrl(''), 'https://9router.bangkhan.com');
-  assert.equal(resolveUpstreamBaseUrl('   '), 'https://9router.bangkhan.com');
+test('resolveUpstreamBaseUrl defaults to https://router.bangkhan.com when unset or empty', () => {
+  assert.equal(resolveUpstreamBaseUrl(undefined), 'https://router.bangkhan.com');
+  assert.equal(resolveUpstreamBaseUrl(null), 'https://router.bangkhan.com');
+  assert.equal(resolveUpstreamBaseUrl(''), 'https://router.bangkhan.com');
+  assert.equal(resolveUpstreamBaseUrl('   '), 'https://router.bangkhan.com');
 });
 
 test('resolveUpstreamBaseUrl normalizes valid HTTPS URLs and removes trailing slash', () => {
-  assert.equal(resolveUpstreamBaseUrl('https://9router.bangkhan.com'), 'https://9router.bangkhan.com');
-  assert.equal(resolveUpstreamBaseUrl('https://9router.bangkhan.com/'), 'https://9router.bangkhan.com');
-  assert.equal(resolveUpstreamBaseUrl('https://9router.bangkhan.com///'), 'https://9router.bangkhan.com');
+  assert.equal(resolveUpstreamBaseUrl('https://router.bangkhan.com'), 'https://router.bangkhan.com');
+  assert.equal(resolveUpstreamBaseUrl('https://router.bangkhan.com/'), 'https://router.bangkhan.com');
+  assert.equal(resolveUpstreamBaseUrl('https://router.bangkhan.com///'), 'https://router.bangkhan.com');
   assert.equal(resolveUpstreamBaseUrl('https://router.internal:8443/'), 'https://router.internal:8443');
 });
 
@@ -29,7 +29,7 @@ test('resolveUpstreamBaseUrl permits HTTP for loopback development', () => {
 
 test('resolveUpstreamBaseUrl rejects public plain HTTP', () => {
   assert.throws(
-    () => resolveUpstreamBaseUrl('http://9router.bangkhan.com'),
+    () => resolveUpstreamBaseUrl('http://router.bangkhan.com'),
     (err) => {
       assert.equal(err.message, 'Invalid UPSTREAM_BASE_URL: must be HTTPS or loopback HTTP');
       assert.equal(err.message.includes('bangkhan'), false);
@@ -44,7 +44,7 @@ test('resolveUpstreamBaseUrl rejects public plain HTTP', () => {
 
 test('resolveUpstreamBaseUrl rejects credentials, query params, hash, and non-root paths', () => {
   assert.throws(
-    () => resolveUpstreamBaseUrl('https://user:secret123@9router.bangkhan.com'),
+    () => resolveUpstreamBaseUrl('https://user:secret123@router.bangkhan.com'),
     (err) => {
       assert.equal(err.message, 'Invalid UPSTREAM_BASE_URL: credentials not permitted');
       assert.equal(err.message.includes('secret123'), false);
@@ -53,7 +53,7 @@ test('resolveUpstreamBaseUrl rejects credentials, query params, hash, and non-ro
   );
 
   assert.throws(
-    () => resolveUpstreamBaseUrl('https://9router.bangkhan.com?token=secret123'),
+    () => resolveUpstreamBaseUrl('https://router.bangkhan.com?token=secret123'),
     (err) => {
       assert.equal(err.message, 'Invalid UPSTREAM_BASE_URL: query parameters not permitted');
       assert.equal(err.message.includes('secret123'), false);
@@ -62,12 +62,12 @@ test('resolveUpstreamBaseUrl rejects credentials, query params, hash, and non-ro
   );
 
   assert.throws(
-    () => resolveUpstreamBaseUrl('https://9router.bangkhan.com#anchor'),
+    () => resolveUpstreamBaseUrl('https://router.bangkhan.com#anchor'),
     (err) => err.message === 'Invalid UPSTREAM_BASE_URL: hash fragment not permitted'
   );
 
   assert.throws(
-    () => resolveUpstreamBaseUrl('https://9router.bangkhan.com/api/v1'),
+    () => resolveUpstreamBaseUrl('https://router.bangkhan.com/api/v1'),
     (err) => err.message === 'Invalid UPSTREAM_BASE_URL: base path must be empty'
   );
 });
@@ -78,7 +78,7 @@ test('resolveUpstreamBaseUrl rejects non-http protocols and malformed strings', 
     (err) => err.message === 'Invalid UPSTREAM_BASE_URL: protocol must be http or https'
   );
   assert.throws(
-    () => resolveUpstreamBaseUrl('ftp://9router.bangkhan.com'),
+    () => resolveUpstreamBaseUrl('ftp://router.bangkhan.com'),
     (err) => err.message === 'Invalid UPSTREAM_BASE_URL: protocol must be http or https'
   );
   assert.throws(
@@ -87,8 +87,8 @@ test('resolveUpstreamBaseUrl rejects non-http protocols and malformed strings', 
   );
 });
 
-test('UPSTREAM_BASE_URL exported constant defaults to https://9router.bangkhan.com', () => {
-  assert.equal(UPSTREAM_BASE_URL, 'https://9router.bangkhan.com');
+test('UPSTREAM_BASE_URL exported constant defaults to https://router.bangkhan.com', () => {
+  assert.equal(UPSTREAM_BASE_URL, 'https://router.bangkhan.com');
 });
 
 test('UPSTREAM_BASE_URL respects process.env.UPSTREAM_BASE_URL override', () => {

@@ -12,7 +12,7 @@ services:
       HOSTNAME: "0.0.0.0"
       PORT: "20130"
       APP_ORIGIN: "${APP_ORIGIN:?set APP_ORIGIN}"
-      UPSTREAM_BASE_URL: "${UPSTREAM_BASE_URL:-https://9router.bangkhan.com}"
+      UPSTREAM_BASE_URL: "${UPSTREAM_BASE_URL:-https://router.bangkhan.com}"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:20130/api/health"]
       interval: 30s
