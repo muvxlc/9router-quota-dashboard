@@ -25,7 +25,10 @@ export default function LiveModelsView({
 
   const [isPaused, setIsPaused] = useState(false);
   const isPausedRef = useRef(isPaused);
-  isPausedRef.current = isPaused;
+
+  useEffect(() => {
+    isPausedRef.current = isPaused;
+  }, [isPaused]);
 
   const [search, setSearch] = useState('');
   const [providerFilter, setProviderFilter] = useState('all');
