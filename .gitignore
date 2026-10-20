@@ -27,6 +27,7 @@ design-preview-*.html
 
 # Tooling and local artifacts
 .omo/
+.senpi/
 .playwright-mcp/
 *.png
 
