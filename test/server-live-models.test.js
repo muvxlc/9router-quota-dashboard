@@ -79,6 +79,7 @@ test('sanitizeLiveModels strips all secret, cost, token, and unapproved fields',
         count: 2,
         cost: 0.05,
         tokens: 1200,
+        effort: 'high',
         apiKey: 'secret',
       },
       {
@@ -130,6 +131,7 @@ test('sanitizeLiveModels strips all secret, cost, token, and unapproved fields',
   assert.ok(!str.includes('totalCost'));
   assert.ok(!str.includes('totalPromptTokens'));
   assert.ok(!str.includes('prompt_tokens'));
+  assert.ok(!str.includes('effort'));
   assert.ok(!str.includes('errorProvider'));
   assert.ok(!str.includes('developer@company.com'));
   assert.ok(!str.includes('sk-secret'));
@@ -202,6 +204,23 @@ test('sanitizeLiveModels handles null, undefined, empty, or malformed input safe
 
   const empty3 = sanitizeLiveModels({ activeRequests: 'not-an-array' });
   assert.deepEqual(empty3.activeModels, []);
+
+  const empty4 = sanitizeLiveModels({ recentRequests: [{ model: 'm', provider: 'p' }] });
+  assert.deepEqual(empty4.activeModels, []);
+});
+
+test('sanitizeLiveModels treats each active list as authoritative replacement', () => {
+  const firstFrame = sanitizeLiveModels({
+    activeRequests: [{ model: 'first', provider: 'generic-router', count: 1 }],
+  });
+  const nextFrame = sanitizeLiveModels({ activeRequests: [] });
+  const omittedFrame = sanitizeLiveModels({ recentRequests: [] });
+
+  assert.deepEqual(firstFrame.activeModels, [
+    { model: 'first', provider: 'generic-router', account: '', count: 1 },
+  ]);
+  assert.deepEqual(nextFrame.activeModels, []);
+  assert.deepEqual(omittedFrame.activeModels, []);
 });
 
 test('parseSseChunks parses single and fragmented SSE messages and ignores comments', () => {
@@ -248,6 +267,7 @@ test('GET /api/live-models rejects unauthenticated requests with 401', async () 
 
   const res = await GET(req);
   assert.equal(res.status, 401);
+  assert.notEqual(res.headers.get('Content-Type'), 'text/event-stream');
   const data = await res.json();
   assert.equal(data.error.code, 'SESSION_REQUIRED');
 });
