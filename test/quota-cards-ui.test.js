@@ -28,7 +28,8 @@ test('the summary card renders first, before the account cards', () => {
 test('the summary card shows the overall average and one cell per quota window', () => {
   const block = summaryBlock(cardsSrc);
   assert.match(block, /Average Remaining/);
-  assert.match(block, /Overall \{formatAverage\(averages\.overall\.average\)\}/);
+  assert.match(block, /className="quota-card-summary-overall tabular-nums"[\s\S]*?AVG <span>\{formatAverage\(averages\.overall\.average\)\}<\/span>/);
+  assert.match(block, /\{averages\.overall\.count\}\/\{averages\.overall\.total\} acc/);
   assert.match(block, /data-window=\{avg\.key\}/);
   assert.match(block, /title=\{\`\$\{windowLabel\(avg\)\}: \$\{formatAverage\(avg\.average\)\} \(\$\{avg\.count\}\/\$\{avg\.total\} accounts\)\`\}/, 'cell title carries count/total');
   assert.match(block, /pp-pool-avg-cell/);
@@ -45,7 +46,6 @@ test('the summary card is not interactive', () => {
 });
 
 test('an unavailable or unknown average renders an em dash, never NaN', () => {
-  const block = summaryBlock(cardsSrc);
   assert.match(cardsSrc, /function formatAverage/, 'formatAverage lives in the same file');
   assert.match(cardsSrc, /Number\.isFinite\(value\) \? `\$\{Math\.round\(value\)\}%` : '—'/);
 
@@ -62,6 +62,9 @@ test('cards.css styles the summary card without restyling .quota-card', () => {
   assert.match(cssSrc, /\.quota-card\.quota-card-summary\s*\{[^}]*cursor:\s*default/s);
   assert.match(cssSrc, /\.quota-card\.quota-card-summary\s*\{[^}]*border-style:\s*dashed/s);
   assert.match(cssSrc, /\.quota-card-summary-overall\s*\{/);
+  assert.match(cssSrc, /\.quota-card-summary-overall\s*\{[^}]*margin-left:\s*auto/s);
+  assert.match(cssSrc, /\.quota-card-summary-overall\s*\{[^}]*background:\s*var\(--theme-dark\)/s);
+  assert.match(cssSrc, /\.quota-card-summary-overall span\s*\{[^}]*color:\s*var\(--theme-orange\)/s);
 
   const mobileCss = fs.readFileSync(path.join(projectRoot, 'app/styles/responsive-mobile.css'), 'utf8');
   assert.match(mobileCss, /@media \(max-width: 767px\)[\s\S]*\.quota-card\.quota-card-summary\s*\{[^}]*grid-column:\s*1 \/ -1/s);

@@ -32,9 +32,11 @@ export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }
         <div className="quota-card quota-card-summary" aria-label="Average remaining quota across listed accounts">
           <div className="quota-card-head">
             <span className="quota-card-alias">Average Remaining</span>
-            <span className="quota-card-summary-overall tabular-nums">Overall {formatAverage(averages.overall.average)}</span>
+            <span className="quota-card-summary-overall tabular-nums" aria-label={`Overall average ${formatAverage(averages.overall.average)}`}>
+              AVG <span>{formatAverage(averages.overall.average)}</span>
+            </span>
             <span className="pp-pill-counter">
-              ({averages.overall.count}/{averages.overall.total} accounts)
+              ({averages.overall.count}/{averages.overall.total} acc)
             </span>
           </div>
           <div className="quota-card-windows">

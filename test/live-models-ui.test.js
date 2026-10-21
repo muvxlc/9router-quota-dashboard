@@ -159,6 +159,7 @@ test('Recently completed rows are a single line with truncated fields', () => {
   assert.doesNotMatch(block, /flexDirection:\s*'column'/, 'completed rows must stay one flex line');
   assert.ok(!viewSrc.includes('ponytail: fixed two-line row'), 'two-line row marker must be gone');
   assert.match(block, /title=\{item\.model\}/, 'model keeps its full text in the title');
+  assert.match(block, /<span style=\{\{ display: 'flex', alignItems: 'center', gap: 6, flex: '1 1 auto', minWidth: 0 \}\}>[\s\S]*?\{item\.model\}[\s\S]*?\{item\.providerLabel \|\| item\.provider\}/, 'provider badge follows model name');
 });
 
 test('Provider display text uses providerLabel while identity keeps the raw provider', () => {

@@ -724,41 +724,42 @@ export default function LiveModelsView({
                       minWidth: 0,
                     }}
                   >
-                    <span
-                      title={item.model}
-                      style={{
-                        flex: '1 1 auto',
-                        minWidth: 0,
-                        fontWeight: 600,
-                        fontSize: 13,
-                        color: 'var(--theme-text-main)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {item.model}
-                    </span>
-                    <span
-                      className="acc-tag"
-                      title={item.providerLabel || item.provider}
-                      style={{
-                        background: 'var(--theme-dark)',
-                        color: '#fff',
-                        padding: '1px 5px',
-                        borderRadius: 3,
-                        fontSize: 10,
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        flexShrink: 0,
-                        maxWidth: '28%',
-                        minWidth: 0,
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {item.providerLabel || item.provider}
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6, flex: '1 1 auto', minWidth: 0 }}>
+                      <span
+                        title={item.model}
+                        style={{
+                          minWidth: 0,
+                          fontWeight: 600,
+                          fontSize: 13,
+                          color: 'var(--theme-text-main)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {item.model}
+                      </span>
+                      <span
+                        className="acc-tag"
+                        title={item.providerLabel || item.provider}
+                        style={{
+                          background: 'var(--theme-dark)',
+                          color: '#fff',
+                          padding: '1px 5px',
+                          borderRadius: 3,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          flexShrink: 0,
+                          maxWidth: '28%',
+                          minWidth: 0,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {item.providerLabel || item.provider}
+                      </span>
                     </span>
                     {item.account && (
                       <span

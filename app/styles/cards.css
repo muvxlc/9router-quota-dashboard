@@ -195,14 +195,22 @@
   background: var(--theme-canvas);
 }
 .quota-card-summary-overall {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--theme-dark);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 700;
-  color: var(--theme-dark);
+  color: #fff;
   white-space: nowrap;
 }
-[data-theme='dark'] .quota-card-summary-overall {
-  color: var(--theme-text-main);
+.quota-card-summary-overall span {
+  color: var(--theme-orange);
+  font-size: 13px;
 }
 .quota-card-head {
   display: flex;
