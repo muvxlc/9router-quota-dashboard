@@ -8,7 +8,7 @@ import {
 } from '../lib/server/liveModels.js';
 import { GET } from '../app/api/live-models/route.js';
 import { defaultSessionStore } from '../lib/server/session.js';
-import { defaultUpstreamClient } from '../lib/server/upstream.js';
+import { defaultUpstreamClient, isAllowedPath } from '../lib/server/upstream.js';
 import { SESSION_COOKIE_NAME, APP_ORIGIN } from '../lib/server/config.js';
 
 test('sanitizeAccountDisplay masks emails, credentials, and bounds length', () => {
@@ -533,4 +533,96 @@ test('createLiveModelsStream terminates with unauthenticated on explicit revalid
     defaultUpstreamClient.revalidateAuthResult = originalRevalidate;
     defaultSessionStore.destroySession(token);
   }
+});
+
+test('sanitizeLiveModels emits no providerLabel key when no label map is supplied', () => {
+  const rawProvider = 'openai-compatible-chat-c8016b27-204f-480f-83b8-2826703ee737';
+  const payload = {
+    activeRequests: [{ model: 'gpt-4o', provider: rawProvider, account: 'dev@company.com', count: 2 }],
+    recentRequests: [
+      { model: 'gpt-4o', provider: rawProvider, status: 'ok', timestamp: '2026-09-24T01:00:00.000Z', account: 'dev@company.com' },
+    ],
+  };
+
+  const sanitized = sanitizeLiveModels(payload);
+  assert.deepEqual(sanitized.activeModels, [
+    { model: 'gpt-4o', provider: rawProvider, account: 'de***@company.com', count: 2 },
+  ]);
+  assert.deepEqual(sanitized.recentRequests, [
+    {
+      model: 'gpt-4o',
+      provider: rawProvider,
+      status: 'ok',
+      timestamp: '2026-09-24T01:00:00.000Z',
+      account: 'de***@company.com',
+    },
+  ]);
+  assert.ok(!Object.hasOwn(sanitized.activeModels[0], 'providerLabel'));
+  assert.ok(!Object.hasOwn(sanitized.recentRequests[0], 'providerLabel'));
+
+  // An explicit empty map must behave exactly like no options at all.
+  const withEmptyMap = sanitizeLiveModels(payload, { providerLabels: {} });
+  assert.deepEqual(withEmptyMap.activeModels, sanitized.activeModels);
+  assert.deepEqual(withEmptyMap.recentRequests, sanitized.recentRequests);
+});
+
+test('sanitizeLiveModels attaches providerLabel while keeping the raw provider id', () => {
+  const rawProvider = 'openai-compatible-chat-c8016b27-204f-480f-83b8-2826703ee737';
+  const payload = {
+    activeRequests: [{ model: 'gpt-4o', provider: rawProvider, account: 'dev@company.com', count: 1 }],
+    recentRequests: [{ model: 'gpt-4o', provider: rawProvider, status: 'ok', timestamp: '2026-09-24T01:00:00.000Z' }],
+  };
+
+  const sanitized = sanitizeLiveModels(payload, { providerLabels: { [rawProvider]: 'mcs' } });
+  assert.deepEqual(sanitized.activeModels[0], {
+    model: 'gpt-4o',
+    provider: rawProvider,
+    account: 'de***@company.com',
+    count: 1,
+    providerLabel: 'mcs',
+  });
+  assert.equal(sanitized.recentRequests[0].provider, rawProvider);
+  assert.equal(sanitized.recentRequests[0].providerLabel, 'mcs');
+});
+
+test('isAllowedPath allows the provider node list and rejects traversal or prefix lookalikes', () => {
+  assert.equal(isAllowedPath('/api/provider-nodes'), true);
+  assert.equal(isAllowedPath('/api/provider-nodes?scope=all'), true);
+  assert.equal(isAllowedPath('/api/provider-nodes/../secret'), false);
+  assert.equal(isAllowedPath('/api/provider-nodesx'), false);
+});
+
+test('sanitizeLiveModels truncates a long provider id at 64 and keeps the 32-char label', () => {
+  const rawProvider = `openai-compatible-chat-${'a'.repeat(80)}`;
+  const longLabel = `label-${'b'.repeat(40)}`;
+  assert.ok(rawProvider.length > 64);
+
+  const sanitized = sanitizeLiveModels(
+    {
+      activeRequests: [{ model: 'gpt-4o', provider: rawProvider, account: 'a@b.com', count: 1 }],
+      recentRequests: [{ model: 'gpt-4o', provider: rawProvider, status: 'ok', timestamp: '2026-09-24T01:00:00.000Z' }],
+    },
+    { providerLabels: { [rawProvider]: longLabel } }
+  );
+
+  assert.equal(sanitized.activeModels[0].provider, rawProvider.slice(0, 64));
+  assert.equal(sanitized.activeModels[0].providerLabel, longLabel.slice(0, 32));
+  assert.equal(sanitized.recentRequests[0].provider, rawProvider.slice(0, 64));
+  assert.equal(sanitized.recentRequests[0].providerLabel, longLabel.slice(0, 32));
+});
+
+test('sanitizeLiveModels drops a mapped label that looks like a credential', () => {
+  const rawProvider = 'openai-compatible-chat-c8016b27-204f-480f-83b8-2826703ee737';
+  const sanitized = sanitizeLiveModels(
+    {
+      activeRequests: [{ model: 'gpt-4o', provider: rawProvider, account: 'a@b.com', count: 1 }],
+      recentRequests: [{ model: 'gpt-4o', provider: rawProvider, status: 'ok', timestamp: '2026-09-24T01:00:00.000Z' }],
+    },
+    { providerLabels: { [rawProvider]: 'sk-1234567890abcdef' } }
+  );
+
+  assert.equal(sanitized.activeModels[0].provider, rawProvider);
+  assert.ok(!Object.hasOwn(sanitized.activeModels[0], 'providerLabel'));
+  assert.ok(!Object.hasOwn(sanitized.recentRequests[0], 'providerLabel'));
+  assert.ok(!JSON.stringify(sanitized).includes('sk-1234567890abcdef'));
 });
