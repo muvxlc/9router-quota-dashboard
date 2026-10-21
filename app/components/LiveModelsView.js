@@ -25,6 +25,13 @@ const SUMMARY_TONE_COLORS = {
   critical: 'var(--theme-red)',
 };
 
+const SUMMARY_PERIODS = [
+  { value: '1d', label: '1d' },
+  { value: '7d', label: '7d' },
+  { value: '30d', label: '30d' },
+  { value: 'all', label: 'all' },
+];
+
 const formatReceivedTitle = (iso) => (iso ? `Last received ${new Date(iso).toLocaleString()}` : 'Not received yet');
 
 export default function LiveModelsView({
@@ -59,6 +66,7 @@ export default function LiveModelsView({
   const [failedKeys, setFailedKeys] = useState([]);
   const [lastAttemptAt, setLastAttemptAt] = useState(null);
   const [nowMs, setNowMs] = useState(null);
+  const [summaryPeriod, setSummaryPeriod] = useState(SUMMARY_PERIODS[0].value);
   const summaryAbortRef = useRef(null);
   const onSessionLossRef = useRef(onSessionLoss);
 
@@ -78,7 +86,7 @@ export default function LiveModelsView({
     setSummaryState('loading');
     let aborted = false;
     try {
-      const body = await fetchLiveModelsSummary(fetch, controller.signal);
+      const body = await fetchLiveModelsSummary(fetch, controller.signal, summaryPeriod);
       if (controller.signal.aborted) {
         aborted = true;
         return;
@@ -119,7 +127,7 @@ export default function LiveModelsView({
         setNowMs(Date.now());
       }
     }
-  }, [handleStreamSessionLoss]);
+  }, [handleStreamSessionLoss, summaryPeriod]);
 
   useEffect(() => {
     // ponytail: kick the first fetch off the effect body so React's purity lint stays happy
@@ -190,6 +198,20 @@ export default function LiveModelsView({
       if (item.provider) set.add(item.provider.toLowerCase());
     }
     return Array.from(set).sort();
+  }, [activeModels, accumulatedRecent]);
+
+  // Display-only short labels; identity, filtering and keys keep the raw provider id.
+  const providerDisplayLabels = useMemo(() => {
+    const map = new Map();
+    for (const item of activeModels) {
+      const key = (item.provider || '').toLowerCase();
+      if (key && item.providerLabel && !map.has(key)) map.set(key, item.providerLabel);
+    }
+    for (const item of accumulatedRecent) {
+      const key = (item.provider || '').toLowerCase();
+      if (key && item.providerLabel && !map.has(key)) map.set(key, item.providerLabel);
+    }
+    return map;
   }, [activeModels, accumulatedRecent]);
 
   const filteredActive = useMemo(() => {
@@ -284,6 +306,37 @@ export default function LiveModelsView({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 2 }} role="group" aria-label="Billing period">
+            {SUMMARY_PERIODS.map((p) => (
+              <button
+                key={`summary-period-${p.value}`}
+                type="button"
+                onClick={() => {
+                  // ponytail: a period switch invalidates the retained value; clearing here
+                  // keeps the old window's cost from lingering under the new label.
+                  setSummary(EMPTY_SUMMARY);
+                  setFailedKeys([]);
+                  setSummaryPeriod(p.value);
+                }}
+                aria-pressed={summaryPeriod === p.value}
+                title={`Show cost for ${p.value === 'all' ? 'all time' : `the last ${p.value}`}`}
+                style={{
+                  padding: '3px 7px',
+                  fontSize: 10,
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  borderRadius: 'var(--radius-sm, 4px)',
+                  border: summaryPeriod === p.value ? '1px solid var(--theme-orange)' : '1px solid var(--theme-border)',
+                  background: summaryPeriod === p.value ? 'var(--theme-orange-tint, rgba(255, 107, 0, 0.12))' : 'transparent',
+                  color: summaryPeriod === p.value ? 'var(--theme-orange)' : 'var(--theme-text-muted)',
+                  cursor: 'pointer',
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
           <span className={`status-pill ${statusMeta.pillClass}`}>
             {isPaused ? 'PAUSED' : statusMeta.text}
           </span>
@@ -343,7 +396,9 @@ export default function LiveModelsView({
             {activeProvidersCount}
           </div>
           <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
-            {activeProvidersCount > 0 ? uniqueProviders.slice(0, 3).join(', ') : 'None'}
+            {activeProvidersCount > 0
+              ? uniqueProviders.slice(0, 3).map((p) => providerDisplayLabels.get(p) || p).join(', ')
+              : 'None'}
           </div>
         </div>
 
@@ -501,7 +556,7 @@ export default function LiveModelsView({
                 cursor: 'pointer',
               }}
             >
-              {p}
+              {providerDisplayLabels.get(p) || p}
             </button>
           ))}
         </div>
@@ -570,7 +625,7 @@ export default function LiveModelsView({
                                 textTransform: 'uppercase',
                               }}
                             >
-                              {item.provider}
+                              {item.providerLabel || item.provider}
                             </span>
                           </div>
                           {item.account && (
@@ -657,94 +712,96 @@ export default function LiveModelsView({
                   <div
                     key={`recent-view-${item.model}-${item.provider}-${idx}-${item.timestamp || ''}`}
                     style={{
-                      padding: '10px 14px',
+                      padding: '8px 14px',
                       backgroundColor: 'var(--theme-canvas-subtle)',
                       borderRadius: 'var(--radius-sm)',
                       border: '1px solid var(--theme-border)',
                       display: 'flex',
+                      flexDirection: 'row',
+                      flexWrap: 'nowrap',
                       alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
+                      gap: 8,
+                      minWidth: 0,
                     }}
                   >
-                    <div style={{ minWidth: 0, flex: 1 }}>
-                      <div
+                    <span
+                      title={item.model}
+                      style={{
+                        flex: '1 1 auto',
+                        minWidth: 0,
+                        fontWeight: 600,
+                        fontSize: 13,
+                        color: 'var(--theme-text-main)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {item.model}
+                    </span>
+                    <span
+                      className="acc-tag"
+                      title={item.providerLabel || item.provider}
+                      style={{
+                        background: 'var(--theme-dark)',
+                        color: '#fff',
+                        padding: '1px 5px',
+                        borderRadius: 3,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        flexShrink: 0,
+                        maxWidth: '28%',
+                        minWidth: 0,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {item.providerLabel || item.provider}
+                    </span>
+                    {item.account && (
+                      <span
                         style={{
-                          fontWeight: 600,
-                          fontSize: 13,
-                          color: 'var(--theme-text-main)',
+                          fontSize: 11,
+                          color: 'var(--theme-text-muted)',
+                          flex: '0 2 auto',
+                          minWidth: 0,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                         }}
                       >
-                        {item.model}
-                      </div>
-                      {/* ponytail: fixed two-line row - line 2 always holds provider + account */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, minWidth: 0 }}>
-                        <span
-                          className="acc-tag"
-                          style={{
-                            background: 'var(--theme-dark)',
-                            color: '#fff',
-                            padding: '1px 5px',
-                            borderRadius: 3,
-                            fontSize: 10,
-                            fontWeight: 600,
-                            textTransform: 'uppercase',
-                            flexShrink: 1,
-                            minWidth: 0,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {item.provider}
-                        </span>
-                        {item.account && (
-                          <span
-                            style={{
-                              fontSize: 11,
-                              color: 'var(--theme-text-muted)',
-                              flexShrink: 2,
-                              minWidth: 0,
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
-                            {maskEmail(item.account)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <span
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          padding: '2px 6px',
-                          borderRadius: 'var(--radius-sm)',
-                          fontSize: 11,
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          backgroundColor: item.status === 'error' ? 'var(--theme-red-tint)' : 'var(--theme-green-tint)',
-                          color: item.status === 'error' ? 'var(--theme-red)' : 'var(--theme-green)',
-                        }}
-                      >
-                        {item.status || 'done'}
+                        {maskEmail(item.account)}
                       </span>
-                      {item.timestamp && (
-                        <div
-                          style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}
-                          className="tabular-nums"
-                          title={new Date(item.timestamp).toLocaleString()}
-                        >
-                          {getRelativeTime(item.timestamp)}
-                        </div>
-                      )}
-                    </div>
+                    )}
+
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap',
+                        padding: '2px 6px',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        backgroundColor: item.status === 'error' ? 'var(--theme-red-tint)' : 'var(--theme-green-tint)',
+                        color: item.status === 'error' ? 'var(--theme-red)' : 'var(--theme-green)',
+                      }}
+                    >
+                      {item.status || 'done'}
+                    </span>
+                    {item.timestamp && (
+                      <span
+                        style={{ flexShrink: 0, whiteSpace: 'nowrap', fontSize: 11, color: 'var(--theme-text-muted)' }}
+                        className="tabular-nums"
+                        title={new Date(item.timestamp).toLocaleString()}
+                      >
+                        {getRelativeTime(item.timestamp)}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

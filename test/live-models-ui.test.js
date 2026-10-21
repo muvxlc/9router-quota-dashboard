@@ -124,6 +124,13 @@ test('LiveModelsView wires the three summary cards and a 60s attempt-based refre
   assert.match(refreshCall[0], /enabled:\s*true/);
   assert.doesNotMatch(refreshCall[0], /lastSyncAt:\s*summary\.usageReceivedAt/);
 
+  assert.match(viewSrc, /fetchLiveModelsSummary\(fetch, controller\.signal, summaryPeriod\)/);
+  assert.match(viewSrc, /const \[summaryPeriod, setSummaryPeriod\] = useState\(SUMMARY_PERIODS\[0\]\.value\)/);
+  for (const period of ['1d', '7d', '30d', 'all']) {
+    assert.ok(viewSrc.includes(`value: '${period}'`), `period option ${period} must exist`);
+  }
+  assert.ok(viewSrc.includes('setSummaryPeriod(p.value)'), 'period buttons must switch the period');
+
   const gridStart = viewSrc.indexOf('live-models-kpi-grid');
   const gridEnd = viewSrc.indexOf('<QuotaCards');
   assert.ok(gridStart > 0 && gridEnd > gridStart, 'KPI grid must precede the quota cards');
@@ -136,6 +143,39 @@ test('LiveModelsView wires the three summary cards and a 60s attempt-based refre
 
   assert.match(viewSrc, /finally\s*\{[\s\S]*?setLastAttemptAt\(new Date\(\)\.toISOString\(\)\)[\s\S]*?\}/);
   assert.match(viewSrc, /deriveSummaryCards\(summary, \{[\s\S]*?failedKeys[\s\S]*?\}\)/);
+});
+
+test('Recently completed rows are a single line with truncated fields', () => {
+  const viewSrc = fs.readFileSync(path.join(projectRoot, 'app/components/LiveModelsView.js'), 'utf8');
+
+  const start = viewSrc.indexOf('filteredRecent.map(');
+  const end = viewSrc.indexOf('live-models-footer');
+  assert.ok(start > 0 && end > start, 'completed-row block must exist');
+  const block = viewSrc.slice(start, end);
+
+  assert.match(block, /flexWrap:\s*'nowrap'/, 'completed rows must not wrap');
+  assert.match(block, /textOverflow:\s*'ellipsis'/, 'completed row fields must ellipsize');
+  assert.doesNotMatch(block, /marginTop:\s*2/, 'completed rows must not stack a second line');
+  assert.doesNotMatch(block, /flexDirection:\s*'column'/, 'completed rows must stay one flex line');
+  assert.ok(!viewSrc.includes('ponytail: fixed two-line row'), 'two-line row marker must be gone');
+  assert.match(block, /title=\{item\.model\}/, 'model keeps its full text in the title');
+});
+
+test('Provider display text uses providerLabel while identity keeps the raw provider', () => {
+  const viewSrc = fs.readFileSync(path.join(projectRoot, 'app/components/LiveModelsView.js'), 'utf8');
+  const stripSrc = fs.readFileSync(path.join(projectRoot, 'app/components/LiveModelsStrip.js'), 'utf8');
+  const modalSrc = fs.readFileSync(path.join(projectRoot, 'app/components/LiveModelsModal.js'), 'utf8');
+
+  assert.match(viewSrc, /item\.providerLabel \|\| item\.provider/);
+  assert.match(stripSrc, /item\.providerLabel \|\|/);
+  assert.match(modalSrc, /item\.providerLabel \|\| item\.provider/);
+
+  // Dedup key, React keys and filters keep the raw id.
+  assert.match(viewSrc, /const key = `\$\{item\.timestamp \|\| ''\}-\$\{item\.model\}-\$\{item\.provider\}-/);
+  assert.match(viewSrc, /key={`active-view-\$\{item\.model\}-\$\{item\.provider\}-/);
+  assert.match(viewSrc, /key={`recent-view-\$\{item\.model\}-\$\{item\.provider\}-/);
+  assert.match(viewSrc, /item\.provider \|\| ''\)\.toLowerCase\(\) !== providerFilter/);
+  assert.doesNotMatch(viewSrc, /providerLabel[^\n]*providerFilter/);
 });
 
 test('Live models page renders compact codex quota cards from page state', () => {

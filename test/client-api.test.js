@@ -182,6 +182,24 @@ test('fetchLiveModelsSummary returns parsed body and uses exact same-origin cont
   assert.equal(data.maxplus.configured, true);
 });
 
+test('fetchLiveModelsSummary appends the period only when given', async () => {
+  const seen = [];
+  const mockFetch = async (url) => {
+    seen.push(url);
+    return { ok: true, status: 200, json: async () => ({}) };
+  };
+
+  await fetchLiveModelsSummary(mockFetch);
+  await fetchLiveModelsSummary(mockFetch, null, '7d');
+  await fetchLiveModelsSummary(mockFetch, null, 'all');
+
+  assert.deepEqual(seen, [
+    '/api/live-models/summary',
+    '/api/live-models/summary?period=7d',
+    '/api/live-models/summary?period=all',
+  ]);
+});
+
 test('fetchLiveModelsSummary throws SessionExpiredError on 401', async () => {
   const mockFetch = async () => ({ ok: false, status: 401, json: async () => ({ error: { code: 'UNAUTHORIZED' } }) });
   await assert.rejects(() => fetchLiveModelsSummary(mockFetch), (err) => err instanceof SessionExpiredError && err.status === 401);

@@ -44,7 +44,7 @@ function fakeClient(routes) {
           w.fn();
         }
       }
-      const handler = routes[path];
+      const handler = routes[path] || routes[path.split('?')[0]];
       if (!handler) throw failure('UPSTREAM_UNAVAILABLE', 503);
       return handler();
     },
@@ -83,17 +83,62 @@ test('GET summary returns 401 SESSION_REQUIRED without a session and never bills
   assert.equal(client.calls.length, 0);
 });
 
-test('GET summary rejects any query parameter with 400 INVALID_REQUEST', async () => {
+test('GET summary rejects unknown query params and invalid periods with 400', async () => {
   const client = fakeClient({});
   const handler = makeHandler(client, { ms: NOW_MS });
 
-  for (const query of ['?period=7d', '?x=1']) {
+  for (const query of ['?x=1', '?period=1y', '?period=', '?period=7d&x=1']) {
     const res = await handler(sessionRequest(query));
     assert.equal(res.status, 400, query);
     const body = await res.json();
     assert.equal(body.error.code, 'INVALID_REQUEST', query);
   }
   assert.equal(client.calls.length, 0);
+});
+
+test('GET summary forwards the period to /v1/usage and defaults to 1d', async () => {
+  const client = fakeClient({
+    '/v1/usage?period=1d': async () => ok({ period: '1d', totals: { total_cost: 1 } }),
+    '/v1/usage?period=7d': async () => ok({ period: '7d', totals: { total_cost: 7 } }),
+    '/v1/usage?period=30d': async () => ok({ period: '30d', totals: { total_cost: 30 } }),
+    '/v1/usage?period=all': async () => ok({ period: 'all', totals: { total_cost: 99 } }),
+    '/v1/me': async () => ok({ credit_usd: 5 }),
+  });
+  const handler = makeHandler(client, { ms: NOW_MS });
+
+  const noParam = await (await handler(sessionRequest())).json();
+  assert.equal(noParam.period, '1d');
+  assert.equal(noParam.totalCost, 1);
+
+  for (const period of ['7d', '30d', 'all']) {
+    resetSummaryCache();
+    const body = await (await handler(sessionRequest(`?period=${period}`))).json();
+    assert.equal(body.period, period, period);
+  }
+});
+
+test('each period is cached independently for 30s', async () => {
+  const client = fakeClient({
+    '/v1/usage?period=1d': async () => ok({ period: '1d', totals: { total_cost: 1 } }),
+    '/v1/usage?period=7d': async () => ok({ period: '7d', totals: { total_cost: 7 } }),
+    '/v1/me': async () => ok({ credit_usd: 5 }),
+  });
+  const clock = { ms: NOW_MS };
+  const handler = makeHandler(client, clock);
+
+  await handler(sessionRequest('?period=1d'));
+  const afterFirst = client.calls.length;
+  await handler(sessionRequest('?period=7d'));
+  const afterSecond = client.calls.length;
+  assert.equal(afterSecond, afterFirst + 2, 'a new period bills once');
+
+  await handler(sessionRequest('?period=1d'));
+  await handler(sessionRequest('?period=7d'));
+  assert.equal(client.calls.length, afterSecond, 'both periods served from cache');
+
+  clock.ms = NOW_MS + 31000;
+  await handler(sessionRequest('?period=1d'));
+  assert.equal(client.calls.length, afterSecond + 2, 'expired period re-bills');
 });
 
 test('GET summary returns 200 with all five fields when both endpoints answer', async () => {
@@ -112,7 +157,7 @@ test('GET summary returns 200 with all five fields when both endpoints answer', 
     usageReceivedAt: new Date(NOW_MS).toISOString(),
     creditReceivedAt: new Date(NOW_MS).toISOString(),
   });
-  assert.deepEqual(client.calls.sort(), ['/v1/me', '/v1/usage']);
+  assert.deepEqual(client.calls.sort(), ['/v1/me', '/v1/usage?period=1d']);
 });
 
 test('GET summary returns 200 with credit nulls when /v1/me is forbidden', async () => {
