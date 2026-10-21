@@ -9,6 +9,8 @@ import {
   loginWithPassword,
   logout,
   fetchStats,
+  fetchLiveModelsSummary,
+  SessionExpiredError,
 } from '../lib/client/api.js';
 
 test('fetchAllConnections fetches sequentially, dedupes, and handles clamped pagination', async () => {
@@ -158,6 +160,57 @@ test('fetchAuthStatus, loginWithPassword, logout communicate with exact contract
   const logoutRes = await logout(mockFetch);
   assert.equal(logoutRes.authenticated, false);
   assert.equal(logoutCalled, true);
+});
+
+test('fetchLiveModelsSummary returns parsed body and uses exact same-origin contract', async () => {
+  let requestedUrl = null;
+  let requestedOpts = null;
+  const mockFetch = async (url, opts = {}) => {
+    requestedUrl = url;
+    requestedOpts = opts;
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ maxplus: { configured: true }, accounts: [], receivedAt: '2026-10-20T00:00:00.000Z' }),
+    };
+  };
+
+  const data = await fetchLiveModelsSummary(mockFetch);
+  assert.equal(requestedUrl, '/api/live-models/summary');
+  assert.equal(requestedOpts.method, 'GET');
+  assert.equal(requestedOpts.credentials, 'same-origin');
+  assert.equal(data.maxplus.configured, true);
+});
+
+test('fetchLiveModelsSummary throws SessionExpiredError on 401', async () => {
+  const mockFetch = async () => ({ ok: false, status: 401, json: async () => ({ error: { code: 'UNAUTHORIZED' } }) });
+  await assert.rejects(() => fetchLiveModelsSummary(mockFetch), (err) => err instanceof SessionExpiredError && err.status === 401);
+});
+
+test('fetchLiveModelsSummary surfaces MAXPLUS_UNCONFIGURED with status 503', async () => {
+  const mockFetch = async () => ({
+    ok: false,
+    status: 503,
+    json: async () => ({ error: { code: 'MAXPLUS_UNCONFIGURED', message: 'MaxPlus not configured' } }),
+  });
+  await assert.rejects(() => fetchLiveModelsSummary(mockFetch), (err) => {
+    assert.equal(err.code, 'MAXPLUS_UNCONFIGURED');
+    assert.equal(err.status, 503);
+    return true;
+  });
+});
+
+test('fetchLiveModelsSummary carries error.code from a 500 body', async () => {
+  const mockFetch = async () => ({
+    ok: false,
+    status: 500,
+    json: async () => ({ error: { code: 'UPSTREAM_FAILURE', message: 'boom' } }),
+  });
+  await assert.rejects(() => fetchLiveModelsSummary(mockFetch), (err) => {
+    assert.equal(err.status, 500);
+    assert.equal(err.code, 'UPSTREAM_FAILURE');
+    return true;
+  });
 });
 
 test('fetchStats requests period and preserves scope and accounts stats', async () => {

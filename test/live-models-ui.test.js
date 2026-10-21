@@ -111,6 +111,33 @@ test('Live models layout classes support desktop fullscreen stretch and responsi
   assert.match(mobileCss, /\.live-models-container\s*\{[^}]*height:\s*auto/s);
 });
 
+test('LiveModelsView wires the three summary cards and a 60s attempt-based refresh', () => {
+  const viewSrc = fs.readFileSync(path.join(projectRoot, 'app/components/LiveModelsView.js'), 'utf8');
+
+  assert.match(viewSrc, /import \{[^}]*fetchLiveModelsSummary[^}]*\} from '\.\.\/\.\.\/lib\/client\/api\.js'/s);
+  assert.match(viewSrc, /import \{[^}]*deriveSummaryCards[^}]*\} from '\.\.\/\.\.\/lib\/client\/maxplusSummary\.js'/s);
+
+  const refreshCall = viewSrc.match(/useAutoRefresh\(\{[\s\S]*?\}\);/);
+  assert.ok(refreshCall, 'LiveModelsView must call useAutoRefresh');
+  assert.match(refreshCall[0], /intervalSec:\s*60/);
+  assert.match(refreshCall[0], /lastSyncAt:\s*lastAttemptAt/);
+  assert.match(refreshCall[0], /enabled:\s*true/);
+  assert.doesNotMatch(refreshCall[0], /lastSyncAt:\s*summary\.usageReceivedAt/);
+
+  const gridStart = viewSrc.indexOf('live-models-kpi-grid');
+  const gridEnd = viewSrc.indexOf('<QuotaCards');
+  assert.ok(gridStart > 0 && gridEnd > gridStart, 'KPI grid must precede the quota cards');
+  const grid = viewSrc.slice(gridStart, gridEnd);
+  assert.equal((grid.match(/className="pp-card"/g) || []).length, 7, 'KPI grid must render seven cards');
+  for (const card of ['periodCard', 'costCard', 'creditCard']) {
+    assert.ok(grid.includes(`{${card}.hint}`), `${card} hint must render as subtext`);
+    assert.ok(grid.includes(`{${card}.value}`), `${card} value must render`);
+  }
+
+  assert.match(viewSrc, /finally\s*\{[\s\S]*?setLastAttemptAt\(new Date\(\)\.toISOString\(\)\)[\s\S]*?\}/);
+  assert.match(viewSrc, /deriveSummaryCards\(summary, \{[\s\S]*?failedKeys[\s\S]*?\}\)/);
+});
+
 test('Live models page renders compact codex quota cards from page state', () => {
   const pageSrc = fs.readFileSync(path.join(projectRoot, 'app/page.js'), 'utf8');
   assert.match(pageSrc, /const codexAccounts = useMemo\(/);

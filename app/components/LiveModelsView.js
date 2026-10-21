@@ -8,7 +8,24 @@ import {
   getLiveStatusMeta,
 } from '../../lib/client/liveModels.js';
 import { maskEmail } from '../../lib/client/selectors.js';
+import { fetchLiveModelsSummary } from '../../lib/client/api.js';
+import {
+  EMPTY_SUMMARY,
+  deriveSummaryCards,
+  deriveSummaryFailures,
+  mergeSummary,
+} from '../../lib/client/maxplusSummary.js';
+import { useAutoRefresh } from '../../lib/client/useAutoRefresh.js';
 import QuotaCards from './QuotaCards.js';
+
+const SUMMARY_TONE_COLORS = {
+  neutral: 'var(--theme-text)',
+  ok: 'var(--theme-green)',
+  warn: 'var(--theme-orange)',
+  critical: 'var(--theme-red)',
+};
+
+const formatReceivedTitle = (iso) => (iso ? `Last received ${new Date(iso).toLocaleString()}` : 'Not received yet');
 
 export default function LiveModelsView({
   url = '/api/live-models',
@@ -36,6 +53,91 @@ export default function LiveModelsView({
   const [search, setSearch] = useState('');
   const [providerFilter, setProviderFilter] = useState('all');
   const [accumulatedRecent, setAccumulatedRecent] = useState([]);
+
+  const [summary, setSummary] = useState(EMPTY_SUMMARY);
+  const [summaryState, setSummaryState] = useState('idle');
+  const [failedKeys, setFailedKeys] = useState([]);
+  const [lastAttemptAt, setLastAttemptAt] = useState(null);
+  const [nowMs, setNowMs] = useState(null);
+  const summaryAbortRef = useRef(null);
+  const onSessionLossRef = useRef(onSessionLoss);
+
+  useEffect(() => {
+    onSessionLossRef.current = onSessionLoss;
+  }, [onSessionLoss]);
+
+  const handleStreamSessionLoss = useCallback(() => {
+    summaryAbortRef.current?.abort();
+    onSessionLossRef.current();
+  }, []);
+
+  const fetchSummary = useCallback(async () => {
+    if (summaryAbortRef.current) summaryAbortRef.current.abort();
+    const controller = new AbortController();
+    summaryAbortRef.current = controller;
+    setSummaryState('loading');
+    let aborted = false;
+    try {
+      const body = await fetchLiveModelsSummary(fetch, controller.signal);
+      if (controller.signal.aborted) {
+        aborted = true;
+        return;
+      }
+      const failures = deriveSummaryFailures(body);
+      if (failures.usageFailed && failures.creditFailed) {
+        setSummaryState('error');
+        setFailedKeys(['period', 'totalCost', 'creditUsd']);
+      } else if (failures.partial) {
+        setSummary(prev => mergeSummary(prev, body));
+        setSummaryState('partial');
+        setFailedKeys(failures.creditFailed ? ['creditUsd'] : ['period', 'totalCost']);
+      } else {
+        setSummary(prev => mergeSummary(prev, body));
+        setSummaryState('ok');
+        setFailedKeys([]);
+      }
+    } catch (err) {
+      if (err?.name === 'AbortError') {
+        aborted = true;
+        return;
+      }
+      if (err?.code === 'MAXPLUS_UNCONFIGURED') {
+        setSummaryState('unconfigured');
+        setFailedKeys([]);
+      } else {
+        setSummaryState('error');
+        setFailedKeys(['period', 'totalCost', 'creditUsd']);
+        if (err?.name === 'SessionExpiredError') {
+          handleStreamSessionLoss();
+        }
+      }
+    } finally {
+      // ponytail: stamp every completed attempt, not just success - useAutoRefresh
+      // only rearms its single timeout when lastSyncAt changes.
+      if (!aborted && summaryAbortRef.current === controller) {
+        setLastAttemptAt(new Date().toISOString());
+        setNowMs(Date.now());
+      }
+    }
+  }, [handleStreamSessionLoss]);
+
+  useEffect(() => {
+    // ponytail: kick the first fetch off the effect body so React's purity lint stays happy
+    const timer = setTimeout(fetchSummary, 0);
+    return () => clearTimeout(timer);
+  }, [fetchSummary]);
+
+  useEffect(() => () => {
+    summaryAbortRef.current?.abort();
+  }, []);
+
+  useAutoRefresh({
+    intervalSec: 60,
+    lastSyncAt: lastAttemptAt,
+    enabled: true,
+    onRefresh: fetchSummary,
+    refreshing: summaryState === 'loading',
+  });
 
   useEffect(() => {
     const handleUpdate = (next) => {
@@ -69,12 +171,12 @@ export default function LiveModelsView({
 
     const sub = createLiveModelsSubscription({
       url,
-      onSessionLoss,
+      onSessionLoss: handleStreamSessionLoss,
       onUpdate: handleUpdate,
     });
 
     return () => sub.unsubscribe();
-  }, [url, onSessionLoss, customSubscription]);
+  }, [url, handleStreamSessionLoss, customSubscription]);
 
   const { status, activeModels, totalCount, receivedAt, connectedAt } = streamState;
   const statusMeta = getLiveStatusMeta(status, totalCount);
@@ -118,6 +220,13 @@ export default function LiveModelsView({
       return true;
     });
   }, [accumulatedRecent, streamState.recentRequests, providerFilter, search]);
+
+  const summaryCards = deriveSummaryCards(summary, {
+    nowMs,
+    unconfigured: summaryState === 'unconfigured',
+    failedKeys,
+  });
+  const [periodCard, costCard, creditCard] = summaryCards;
 
   const activeProvidersCount = useMemo(() => {
     const set = new Set();
@@ -247,6 +356,54 @@ export default function LiveModelsView({
           </div>
           <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
             History buffer (max 30)
+          </div>
+        </div>
+
+        <div className="pp-card" style={{ padding: '10px 14px' }}>
+          <span style={{ fontSize: 11, color: 'var(--theme-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+            {periodCard.label}
+          </span>
+          <div
+            style={{ fontSize: 20, fontWeight: 700, marginTop: 2, color: SUMMARY_TONE_COLORS[periodCard.tone] }}
+            className="tabular-nums"
+            title={formatReceivedTitle(summary.usageReceivedAt)}
+          >
+            {periodCard.value}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
+            {periodCard.hint}
+          </div>
+        </div>
+
+        <div className="pp-card" style={{ padding: '10px 14px' }}>
+          <span style={{ fontSize: 11, color: 'var(--theme-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+            {costCard.label}
+          </span>
+          <div
+            style={{ fontSize: 20, fontWeight: 700, marginTop: 2, color: SUMMARY_TONE_COLORS[costCard.tone] }}
+            className="tabular-nums"
+            title={formatReceivedTitle(summary.usageReceivedAt)}
+          >
+            {costCard.value}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
+            {costCard.hint}
+          </div>
+        </div>
+
+        <div className="pp-card" style={{ padding: '10px 14px' }}>
+          <span style={{ fontSize: 11, color: 'var(--theme-text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+            {creditCard.label}
+          </span>
+          <div
+            style={{ fontSize: 20, fontWeight: 700, marginTop: 2, color: SUMMARY_TONE_COLORS[creditCard.tone] }}
+            className="tabular-nums"
+            title={formatReceivedTitle(summary.creditReceivedAt)}
+          >
+            {creditCard.value}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--theme-text-muted)', marginTop: 2 }}>
+            {creditCard.hint}
           </div>
         </div>
       </div>
