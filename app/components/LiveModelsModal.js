@@ -113,7 +113,7 @@ export default function LiveModelsModal({
                           textTransform: 'uppercase',
                         }}
                       >
-                        {item.provider}
+                        {item.providerLabel || item.provider}
                       </span>
                     </div>
                     {item.account && (
@@ -185,7 +185,7 @@ export default function LiveModelsModal({
                           textTransform: 'uppercase',
                         }}
                       >
-                        {item.provider}
+                        {item.providerLabel || item.provider}
                       </span>
                     </div>
                     {item.account && (

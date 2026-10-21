@@ -80,7 +80,9 @@ export default function LiveModelsStrip({
                           <span>{item.model === 'gemini-3.8-flash-high' ? 'Gemini 3.8 Flash' : item.model}</span>
                           {(item.account || item.provider) && (
                             <span className="acc-tag">
-                              {item.account ? maskEmail(item.account).split('@')[0] : item.provider === 'antigravity' ? 'agy' : item.provider}
+                              {item.account
+                                ? maskEmail(item.account).split('@')[0]
+                                : item.providerLabel || (item.provider === 'antigravity' ? 'agy' : item.provider)}
                             </span>
                           )}
                           {item.count > 1 && (
