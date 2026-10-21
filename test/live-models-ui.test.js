@@ -111,6 +111,22 @@ test('Live models layout classes support desktop fullscreen stretch and responsi
   assert.match(mobileCss, /\.live-models-container\s*\{[^}]*height:\s*auto/s);
 });
 
+test('Live Models UI sources render no effort value, placeholder, or inference', () => {
+  for (const rel of [
+    'app/components/LiveModelsView.js',
+    'app/components/LiveModelsModal.js',
+    'app/components/LiveModelsStrip.js',
+    'lib/client/liveModels.js',
+  ]) {
+    const src = fs.readFileSync(path.join(projectRoot, rel), 'utf8');
+    assert.doesNotMatch(
+      src,
+      /effort/i,
+      `${rel} must not display, infer, or pass through an effort value (schema unavailable)`
+    );
+  }
+});
+
 test('LiveModelsView wires the three summary cards and a 60s attempt-based refresh', () => {
   const viewSrc = fs.readFileSync(path.join(projectRoot, 'app/components/LiveModelsView.js'), 'utf8');
 

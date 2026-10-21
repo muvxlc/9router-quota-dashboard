@@ -47,6 +47,22 @@ test('aggregateLiveModels never passes through unrelated fields', () => {
   assert.equal(JSON.stringify(result).includes('secret.example'), false);
 });
 
+test('aggregateLiveModels omits effort when the upstream effort schema is unavailable', () => {
+  const result = aggregateLiveModels([
+    {
+      model: 'gpt-4o',
+      provider: 'codex',
+      providerLabel: 'mcs',
+      count: 1,
+      effort: 'high',
+    },
+  ]);
+
+  assert.equal(result.models.length, 1);
+  assert.equal(Object.prototype.hasOwnProperty.call(result.models[0], 'effort'), false);
+  assert.equal(JSON.stringify(result).includes('effort'), false);
+});
+
 class MockEventSource {
   static instances = [];
 
