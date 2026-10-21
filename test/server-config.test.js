@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { resolveUpstreamBaseUrl } from '../lib/server/configBaseUrl.js';
+import { resolveBaseUrl, resolveUpstreamBaseUrl } from '../lib/server/configBaseUrl.js';
 import { UPSTREAM_BASE_URL } from '../lib/server/config.js';
 
 test('resolveUpstreamBaseUrl defaults to https://router.bangkhan.com when unset or empty', () => {
@@ -85,6 +85,25 @@ test('resolveUpstreamBaseUrl rejects non-http protocols and malformed strings', 
     () => resolveUpstreamBaseUrl('not-a-valid-url'),
     (err) => err.message === 'Invalid UPSTREAM_BASE_URL: malformed URL'
   );
+});
+
+test('resolveBaseUrl generalizes validation and uses the given env name', () => {
+  assert.equal(
+    resolveBaseUrl('https://maxplus-ai.cc/', { envName: 'MAXPLUS_BASE_URL' }),
+    'https://maxplus-ai.cc'
+  );
+  assert.equal(resolveBaseUrl(undefined), null);
+  assert.equal(resolveBaseUrl('   '), null);
+  assert.equal(resolveBaseUrl(undefined, { fallback: 'https://fallback.example' }), 'https://fallback.example');
+  assert.throws(
+    () => resolveBaseUrl('http://maxplus-ai.cc', { envName: 'MAXPLUS_BASE_URL' }),
+    (err) => err.message === 'Invalid MAXPLUS_BASE_URL: must be HTTPS or loopback HTTP'
+  );
+  assert.throws(
+    () => resolveBaseUrl('https://u:p@maxplus-ai.cc', { envName: 'MAXPLUS_BASE_URL' }),
+    (err) => err.message === 'Invalid MAXPLUS_BASE_URL: credentials not permitted'
+  );
+  assert.equal(resolveUpstreamBaseUrl(undefined), 'https://router.bangkhan.com');
 });
 
 test('UPSTREAM_BASE_URL exported constant defaults to https://router.bangkhan.com', () => {
