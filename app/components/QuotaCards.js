@@ -2,7 +2,7 @@
 
 import StatusPill from './StatusPill.js';
 import QuotaWindowCell from './QuotaWindowCell.js';
-import { calculateDepletionVelocity } from '../../lib/client/selectors.js';
+import { calculateDepletionVelocity, getAccountsQuotaAverages } from '../../lib/client/selectors.js';
 
 function windowLabel(win) {
   if (win.key === 'session' || win.key === '5h') return '5-Hour';
@@ -10,8 +10,14 @@ function windowLabel(win) {
   return win.shortLabel || win.label || win.key;
 }
 
+function formatAverage(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${Math.round(value)}%` : '—';
+}
+
 export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }) {
   if (!Array.isArray(accounts) || accounts.length === 0) return null;
+
+  const averages = getAccountsQuotaAverages(accounts);
 
   return (
     <section className="pp-card quota-cards" aria-label="Account quota cards">
@@ -23,6 +29,45 @@ export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }
       </div>
 
       <div className="quota-cards-grid">
+        <div className="quota-card quota-card-summary" aria-label="Average remaining quota across listed accounts">
+          <div className="quota-card-head">
+            <span className="quota-card-alias">Average Remaining</span>
+            <span className="quota-card-summary-overall tabular-nums">Overall {formatAverage(averages.overall.average)}</span>
+            <span className="pp-pill-counter">
+              ({averages.overall.count}/{averages.overall.total} accounts)
+            </span>
+          </div>
+          <div className="quota-card-windows">
+            {averages.windows.map((avg) => {
+              const hasAvg = typeof avg.average === 'number' && avg.count > 0;
+              const fillWidth = hasAvg ? Math.min(Math.max(avg.average, 0), 100) : 0;
+              const barColorClass = !hasAvg
+                ? ''
+                : avg.average === 0
+                  ? 'red'
+                  : avg.average < 20
+                    ? 'amber'
+                    : 'green';
+              return (
+                <div
+                  className="pp-pool-avg-cell"
+                  key={avg.key}
+                  data-window={avg.key}
+                  title={`${windowLabel(avg)}: ${formatAverage(avg.average)} (${avg.count}/${avg.total} accounts)`}
+                >
+                  <div className="pp-pool-avg-header">
+                    <span className="pp-pool-avg-label">{windowLabel(avg)}</span>
+                    <span className="pp-pool-avg-value tabular-nums">{formatAverage(avg.average)}</span>
+                  </div>
+                  <div className="pp-bar-track" aria-hidden="true">
+                    <div className={`pp-bar-fill ${barColorClass}`} style={{ width: `${fillWidth}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {accounts.map((acc) => {
           const windows = Array.isArray(acc.quota?.windows) ? acc.quota.windows : [];
           const velocity = calculateDepletionVelocity(acc.quota);

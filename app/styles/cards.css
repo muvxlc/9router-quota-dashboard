@@ -183,6 +183,27 @@
 .quota-card.stale {
   background: rgba(245, 158, 11, 0.04);
 }
+.quota-card.quota-card-summary {
+  background: var(--theme-canvas);
+  border-style: dashed;
+  cursor: default;
+  gap: 8px;
+  padding: 10px 12px;
+}
+.quota-card.quota-card-summary:hover {
+  border-color: var(--theme-border);
+  background: var(--theme-canvas);
+}
+.quota-card-summary-overall {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--theme-dark);
+  white-space: nowrap;
+}
+[data-theme='dark'] .quota-card-summary-overall {
+  color: var(--theme-text-main);
+}
 .quota-card-head {
   display: flex;
   align-items: center;
