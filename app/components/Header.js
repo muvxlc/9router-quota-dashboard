@@ -108,6 +108,15 @@ export default function Header({
         <div className="nav-links" role="tablist">
           <button
             type="button"
+            className={`nav-link-btn ${activeTab === 'live' ? 'active' : ''}`}
+            role="tab"
+            aria-selected={activeTab === 'live'}
+            onClick={() => onTabChange('live')}
+          >
+            Live Models
+          </button>
+          <button
+            type="button"
             className={`nav-link-btn ${activeTab === 'quotas' ? 'active' : ''}`}
             role="tab"
             aria-selected={activeTab === 'quotas'}
@@ -123,15 +132,6 @@ export default function Header({
             onClick={() => onTabChange('usage')}
           >
             Usage
-          </button>
-          <button
-            type="button"
-            className={`nav-link-btn ${activeTab === 'live' ? 'active' : ''}`}
-            role="tab"
-            aria-selected={activeTab === 'live'}
-            onClick={() => onTabChange('live')}
-          >
-            Live Models
           </button>
         </div>
 

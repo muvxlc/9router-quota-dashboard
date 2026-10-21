@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
-  const [activeTab, setActiveTab] = useState('quotas');
+  const [activeTab, setActiveTab] = useState('live');
   const { theme, toggleTheme } = useTheme();
 
   const [search, setSearch] = useState('');
