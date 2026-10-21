@@ -85,11 +85,15 @@ test('createLiveModelsSubscription pauses when offline/hidden and reconnects wit
 
   const es1 = MockEventSource.instances[0];
   es1.simulateOpen();
+  es1.simulateMessage({ activeModels: [{ model: 'gpt-4o', provider: 'openai', count: 1 }] });
+  assert.equal(stateUpdates[stateUpdates.length - 1].activeModels.length, 1);
 
   mockVisible = false;
   if (mockDoc.visibilitychange) mockDoc.visibilitychange();
   assert.equal(es1.closed, true);
   assert.equal(stateUpdates[stateUpdates.length - 1].status, 'disconnected');
+  assert.deepEqual(stateUpdates[stateUpdates.length - 1].activeModels, []);
+  assert.equal(stateUpdates[stateUpdates.length - 1].totalCount, 0);
 
   mockVisible = true;
   if (mockDoc.visibilitychange) mockDoc.visibilitychange();
@@ -119,6 +123,8 @@ test('createLiveModelsSubscription gracefully handles malformed JSON and error e
 
   es.simulateError(new Error('Network error'));
   assert.equal(stateUpdates[stateUpdates.length - 1].status, 'error');
+  assert.deepEqual(stateUpdates[stateUpdates.length - 1].activeModels, []);
+  assert.equal(stateUpdates[stateUpdates.length - 1].totalCount, 0);
 
   sub.unsubscribe();
 });
@@ -160,6 +166,8 @@ test('createLiveModelsSubscription probes auth on onerror and stops retries on a
   const stateUpdates = [];
   let sessionLost = false;
   let probeCalled = 0;
+  let resolveAuthLoss;
+  const authLoss = new Promise((resolve) => { resolveAuthLoss = resolve; });
 
   const mockFetch = async (url, opts) => {
     probeCalled++;
@@ -175,7 +183,7 @@ test('createLiveModelsSubscription probes auth on onerror and stops retries on a
     url: '/api/live-models',
     EventSourceClass: MockEventSource,
     fetchFn: mockFetch,
-    onSessionLoss: () => { sessionLost = true; },
+    onSessionLoss: () => { sessionLost = true; resolveAuthLoss(); },
     onUpdate: (state) => stateUpdates.push(state),
   });
 
@@ -188,7 +196,7 @@ test('createLiveModelsSubscription probes auth on onerror and stops retries on a
 
   es.simulateError(new Error('Connection closed by server'));
 
-  await new Promise((r) => setTimeout(r, 10));
+  await authLoss;
 
   assert.equal(probeCalled, 1);
   assert.equal(sessionLost, true);
@@ -205,9 +213,12 @@ test('createLiveModelsSubscription preserves session on 503 probe error and clea
   const stateUpdates = [];
   let sessionLost = false;
   let probeCalled = 0;
+  let resolveProbe;
+  const probeComplete = new Promise((resolve) => { resolveProbe = resolve; });
 
   const mockFetch = async () => {
     probeCalled++;
+    resolveProbe();
     return {
       ok: false,
       status: 503,
@@ -233,7 +244,7 @@ test('createLiveModelsSubscription preserves session on 503 probe error and clea
 
   es.simulateError(new Error('Gateway timeout'));
 
-  await new Promise((r) => setTimeout(r, 10));
+  await probeComplete;
 
   assert.equal(probeCalled, 1);
   assert.equal(sessionLost, false);
@@ -259,6 +270,9 @@ test('createLiveModelsSubscription ingests recentRequests, caps at 3, and clears
 
   const es = MockEventSource.instances[0];
   es.simulateOpen();
+
+  es.simulateMessage({ activeModels: [{ model: 'gpt-4o', provider: 'openai', count: 1 }] });
+  assert.equal(stateUpdates[stateUpdates.length - 1].activeModels.length, 1);
 
   es.simulateMessage({
     activeModels: [{ model: 'claude-3-5-sonnet', provider: 'codex', count: 1 }],

@@ -142,6 +142,20 @@ test('createLiveModelsSubscription connects, handles live & idle events, and cle
   const idleState = stateUpdates[stateUpdates.length - 1];
   assert.equal(idleState.status, 'idle');
   assert.equal(idleState.totalCount, 0);
+  assert.deepEqual(idleState.activeModels, []);
+
+  es.simulateMessage({ status: 'live' });
+  assert.equal(stateUpdates[stateUpdates.length - 1].activeModels.length, 0);
+  es.simulateMessage({ activeModels: [{ model: 'gpt-4o', provider: 'openai', count: 2 }] });
+  assert.equal(stateUpdates[stateUpdates.length - 1].activeModels.length, 1);
+  es.simulateMessage({ status: 'idle' }, 'status');
+  assert.deepEqual(stateUpdates[stateUpdates.length - 1].activeModels, []);
+  assert.equal(stateUpdates[stateUpdates.length - 1].totalCount, 0);
+
+  es.simulateMessage({ activeModels: [{ model: 'gpt-4o', provider: 'openai', count: 2 }] });
+  es.simulateMessage({ status: 'disconnected' }, 'status');
+  assert.deepEqual(stateUpdates[stateUpdates.length - 1].activeModels, []);
+  assert.equal(stateUpdates[stateUpdates.length - 1].totalCount, 0);
 
   sub.unsubscribe();
 });
