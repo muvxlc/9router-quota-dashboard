@@ -139,3 +139,19 @@ test('unconfigured forces neutral dash with Not configured hint', () => {
     assert.equal(card.tone, 'neutral');
   }
 });
+
+test('a failed fetch with nothing retained is labelled Refresh failed, not Not configured', () => {
+  const failedKeys = ['period', 'totalCost', 'creditUsd'];
+  const cards = byKey(deriveSummaryCards(EMPTY_SUMMARY, { nowMs: NOW, failedKeys }));
+  for (const key of failedKeys) {
+    assert.equal(cards[key].value, '—', key);
+    assert.equal(cards[key].hint, 'Refresh failed', key);
+    assert.equal(cards[key].tone, 'warn', key);
+  }
+  // An empty summary with no failure is still an honest "no data" card.
+  const idle = byKey(deriveSummaryCards(EMPTY_SUMMARY, { nowMs: NOW }));
+  for (const key of failedKeys) {
+    assert.equal(idle[key].hint, 'Not configured', key);
+    assert.equal(idle[key].tone, 'neutral', key);
+  }
+});
