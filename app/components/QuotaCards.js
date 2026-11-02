@@ -135,6 +135,10 @@ export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }
         })}
 
         <div className="quota-card quota-card-summary" aria-label="Average remaining quota across listed accounts">
+          <div className="quota-card-summary-header">
+            <span className="summary-header-label">AVG</span>
+            <span className="summary-header-cols">5H / W</span>
+          </div>
           <div className="quota-card-summary-lines">
             {providerSummaries.map((ps) => (
               <div
@@ -145,7 +149,9 @@ export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }
               >
                 <span className="summary-line-prefix">AVG</span>
                 <span className="summary-line-values">
-                  {ps.val5h} <span className="summary-line-sep">/</span> {ps.valWeekly}
+                  <span className="summary-val-5h">{ps.val5h}</span>
+                  <span className="summary-line-sep">/</span>
+                  <span className="summary-val-w">{ps.valWeekly}</span>
                 </span>
                 <span className="summary-line-provider">
                   {ps.label} {ps.count}/{ps.total}

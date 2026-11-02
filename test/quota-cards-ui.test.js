@@ -25,12 +25,16 @@ test('the summary card renders after all account cards', () => {
   assert.equal((cardsSrc.match(/quota-card-summary"/g) || []).length, 1, 'exactly one summary card');
 });
 
-test('the summary card shows 2-line per-provider average summary without progress bars', () => {
+test('the summary card shows 2-line per-provider average summary with 5H / W header and no progress bars', () => {
   const block = summaryBlock(cardsSrc);
+  assert.match(block, /className="quota-card-summary-header"/);
+  assert.match(block, /summary-header-cols.*5H \/ W/);
   assert.match(block, /className="quota-card-summary-lines"/);
   assert.match(block, /className="quota-card-summary-line tabular-nums"/);
   assert.match(block, /summary-line-prefix.*AVG/);
   assert.match(block, /summary-line-values/);
+  assert.match(block, /summary-val-5h/);
+  assert.match(block, /summary-val-w/);
   assert.match(block, /summary-line-provider/);
   assert.doesNotMatch(block, /pp-bar-track/, 'progress bar track must be removed');
   assert.doesNotMatch(block, /pp-bar-fill/, 'progress bar fill must be removed');
@@ -57,11 +61,14 @@ test('an unavailable or unknown average renders an em dash, never NaN', () => {
 });
 
 test('cards.css styles the summary card without restyling .quota-card', () => {
-  assert.match(cssSrc, /\.quota-card\.quota-card-summary\s*\{[^}]*cursor:\s*default/s);
-  assert.match(cssSrc, /\.quota-card\.quota-card-summary\s*\{[^}]*background:\s*var\(--theme-dark\)/s);
-  assert.match(cssSrc, /\.quota-card-summary-lines\s*\{/);
-  assert.match(cssSrc, /\.quota-card-summary-line\s*\{/);
-  assert.match(cssSrc, /\.summary-line-provider\s*\{[^}]*color:\s*var\(--theme-orange\)/s);
+  const latestCss = fs.readFileSync(path.join(projectRoot, 'app/styles/cards.css'), 'utf8');
+  assert.match(latestCss, /\.quota-card\.quota-card-summary\s*\{[^}]*cursor:\s*default/s);
+  assert.match(latestCss, /\.quota-card\.quota-card-summary\s*\{[^}]*background:\s*var\(--theme-dark\)/s);
+  assert.match(latestCss, /\.quota-card-summary-header\s*\{/);
+  assert.match(latestCss, /\.summary-header-cols\s*\{[^}]*color:\s*var\(--theme-orange\)/s);
+  assert.match(latestCss, /\.summary-val-5h\s*\{[^}]*color:\s*var\(--theme-orange\)/s);
+  assert.match(latestCss, /\.quota-card-summary-lines\s*\{/);
+  assert.match(latestCss, /\.quota-card-summary-line\s*\{/);
 
   const mobileCss = fs.readFileSync(path.join(projectRoot, 'app/styles/responsive-mobile.css'), 'utf8');
   assert.match(mobileCss, /\.quota-card\.quota-card-summary\s*\{[^}]*grid-column:\s*1 \/ -1/s);
