@@ -22,6 +22,28 @@ function formatAverage(value) {
   return typeof value === 'number' && Number.isFinite(value) ? `${Math.round(value)}%` : '—';
 }
 
+function getProviderSummaryLine(providerKey, label, providerAccounts) {
+  if (providerAccounts.length === 0) return null;
+  const avg = getAccountsQuotaAverages(providerAccounts);
+  // find 5h (or gemini flash/pro) and weekly windows
+  const win5h = avg.windows.find((w) => w.key === 'session' || w.key === '5h' || w.key === 'gemini');
+  const winWeekly = avg.windows.find((w) => w.key === 'weekly' || w.key === 'gemini_weekly');
+
+  const val5h = formatAverage(win5h?.average);
+  const valWeekly = formatAverage(winWeekly?.average);
+  const count = avg.overall.count;
+  const total = providerAccounts.length;
+
+  return {
+    providerKey,
+    label,
+    val5h,
+    valWeekly,
+    count,
+    total,
+  };
+}
+
 export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }) {
   if (!Array.isArray(accounts) || accounts.length === 0) return null;
 
@@ -37,9 +59,19 @@ export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }
     };
   });
 
-  const averages = getAccountsQuotaAverages(filteredAccounts);
-  const filteredAvgWindows = averages.windows.filter((avg) => isAllowedWindow(avg?.key));
-  const poolLabel = (accounts[0]?.provider || 'pool').toLowerCase();
+  // Group accounts by provider for 2-line AVG summary
+  const agyAccounts = filteredAccounts.filter((a) => (a.provider || '').toLowerCase() === 'antigravity');
+  const codexAccounts = filteredAccounts.filter((a) => (a.provider || '').toLowerCase() === 'codex');
+  const otherAccounts = filteredAccounts.filter((a) => {
+    const p = (a.provider || '').toLowerCase();
+    return p !== 'antigravity' && p !== 'codex';
+  });
+
+  const providerSummaries = [
+    getProviderSummaryLine('antigravity', 'agy', agyAccounts),
+    getProviderSummaryLine('codex', 'codex', codexAccounts),
+    getProviderSummaryLine('other', 'other', otherAccounts),
+  ].filter(Boolean);
 
   return (
     <section className="pp-card quota-cards" aria-label="Account quota cards">
@@ -103,42 +135,23 @@ export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }
         })}
 
         <div className="quota-card quota-card-summary" aria-label="Average remaining quota across listed accounts">
-          <div className="quota-card-summary-head">
-            <span className="quota-card-summary-overall tabular-nums" aria-label={`Overall average ${formatAverage(averages.overall.average)}`}>
-              AVG <span>{formatAverage(averages.overall.average)}</span>
-            </span>
-            <span className="quota-card-summary-pool tabular-nums">
-              {poolLabel} {averages.overall.count}/{averages.overall.total}
-            </span>
-          </div>
-          <div className="quota-card-windows">
-            {filteredAvgWindows.map((avg) => {
-              const hasAvg = typeof avg.average === 'number' && avg.count > 0;
-              const fillWidth = hasAvg ? Math.min(Math.max(avg.average, 0), 100) : 0;
-              const barColorClass = !hasAvg
-                ? ''
-                : avg.average === 0
-                  ? 'red'
-                  : avg.average < 20
-                    ? 'amber'
-                    : 'green';
-              return (
-                <div
-                  className="pp-pool-avg-cell"
-                  key={avg.key}
-                  data-window={avg.key}
-                  title={`${windowLabel(avg)} ${formatAverage(avg.average)} (${avg.count}/${avg.total})`}
-                >
-                  <div className="pp-pool-avg-header">
-                    <span className="pp-pool-avg-label">{windowLabel(avg)}</span>
-                    <span className="pp-pool-avg-value tabular-nums">{formatAverage(avg.average)}</span>
-                  </div>
-                  <div className="pp-bar-track" aria-hidden="true">
-                    <div className={`pp-bar-fill ${barColorClass}`} style={{ width: `${fillWidth}%` }} />
-                  </div>
-                </div>
-              );
-            })}
+          <div className="quota-card-summary-lines">
+            {providerSummaries.map((ps) => (
+              <div
+                key={ps.providerKey}
+                className="quota-card-summary-line tabular-nums"
+                data-window={ps.providerKey}
+                title={`${ps.label.toUpperCase()}: 5h ${ps.val5h} / Weekly ${ps.valWeekly} (${ps.count}/${ps.total})`}
+              >
+                <span className="summary-line-prefix">AVG</span>
+                <span className="summary-line-values">
+                  {ps.val5h} <span className="summary-line-sep">/</span> {ps.valWeekly}
+                </span>
+                <span className="summary-line-provider">
+                  {ps.label} {ps.count}/{ps.total}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

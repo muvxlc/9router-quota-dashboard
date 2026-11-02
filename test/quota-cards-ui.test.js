@@ -11,7 +11,7 @@ const cssSrc = fs.readFileSync(path.join(projectRoot, 'app/styles/cards.css'), '
 
 function summaryBlock(src) {
   const start = src.indexOf('className="quota-card quota-card-summary"');
-  const end = src.indexOf('\n        </div>\n      </div>\n    </section>', start);
+  const end = src.indexOf('</section>', start);
   assert.ok(start > 0 && end > start, 'summary block must be the final quota card');
   return src.slice(start, end);
 }
@@ -21,21 +21,19 @@ test('QuotaCards imports the cross-account average selector', () => {
 });
 
 test('the summary card renders after all account cards', () => {
-  assert.ok(cardsSrc.indexOf('accounts.map(') < cardsSrc.indexOf('className="quota-card quota-card-summary"'));
+  assert.ok(cardsSrc.indexOf('filteredAccounts.map(') < cardsSrc.indexOf('className="quota-card quota-card-summary"'));
   assert.equal((cardsSrc.match(/quota-card-summary"/g) || []).length, 1, 'exactly one summary card');
 });
 
-test('the summary card shows the overall average and one cell per quota window', () => {
+test('the summary card shows 2-line per-provider average summary without progress bars', () => {
   const block = summaryBlock(cardsSrc);
-  assert.match(block, /className="quota-card-summary-overall tabular-nums"[\s\S]*?AVG <span>\{formatAverage\(averages\.overall\.average\)\}<\/span>/);
-  assert.match(block, /poolLabel\} \{averages\.overall\.count\}\/\{averages\.overall\.total\}/);
-  assert.match(cardsSrc, /const poolLabel = \(accounts\[0\]\?\.provider \|\| 'pool'\)\.toLowerCase\(\)/);
-  assert.match(block, /data-window=\{avg\.key\}/);
-  assert.match(block, /title=\{\`\$\{windowLabel\(avg\)\} \$\{formatAverage\(avg\.average\)\} \(\$\{avg\.count\}\/\$\{avg\.total\}\)\`\}/, 'cell title carries count/total');
-  assert.match(block, /pp-pool-avg-cell/);
-  assert.match(block, /pp-bar-fill/);
-  assert.match(block, /width: `\$\{fillWidth\}%`/);
-  assert.match(block, /Math\.min\(Math\.max\(avg\.average, 0\), 100\)/, 'bar width must be clamped');
+  assert.match(block, /className="quota-card-summary-lines"/);
+  assert.match(block, /className="quota-card-summary-line tabular-nums"/);
+  assert.match(block, /summary-line-prefix.*AVG/);
+  assert.match(block, /summary-line-values/);
+  assert.match(block, /summary-line-provider/);
+  assert.doesNotMatch(block, /pp-bar-track/, 'progress bar track must be removed');
+  assert.doesNotMatch(block, /pp-bar-fill/, 'progress bar fill must be removed');
 });
 
 test('the summary card is not interactive', () => {
@@ -61,10 +59,9 @@ test('an unavailable or unknown average renders an em dash, never NaN', () => {
 test('cards.css styles the summary card without restyling .quota-card', () => {
   assert.match(cssSrc, /\.quota-card\.quota-card-summary\s*\{[^}]*cursor:\s*default/s);
   assert.match(cssSrc, /\.quota-card\.quota-card-summary\s*\{[^}]*background:\s*var\(--theme-dark\)/s);
-  assert.match(cssSrc, /\.quota-card-summary-overall\s*\{/);
-  assert.match(cssSrc, /\.quota-card-summary-overall span\s*\{[^}]*color:\s*var\(--theme-orange\)/s);
-  assert.match(cssSrc, /\.quota-card-summary \.pp-bar-track\s*\{[^}]*max-width:\s*100%[^}]*min-width:\s*0/s);
-  assert.match(cssSrc, /\.quota-card-summary \.quota-card-windows\s*\{[^}]*minmax\(0, 1fr\)/s);
+  assert.match(cssSrc, /\.quota-card-summary-lines\s*\{/);
+  assert.match(cssSrc, /\.quota-card-summary-line\s*\{/);
+  assert.match(cssSrc, /\.summary-line-provider\s*\{[^}]*color:\s*var\(--theme-orange\)/s);
 
   const mobileCss = fs.readFileSync(path.join(projectRoot, 'app/styles/responsive-mobile.css'), 'utf8');
   assert.match(mobileCss, /\.quota-card\.quota-card-summary\s*\{[^}]*grid-column:\s*1 \/ -1/s);

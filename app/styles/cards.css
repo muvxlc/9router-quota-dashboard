@@ -271,71 +271,49 @@
   background: var(--theme-dark);
   border-color: var(--theme-dark);
   cursor: default;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
+  justify-content: center;
 }
 .quota-card.quota-card-summary:hover {
   border-color: var(--theme-dark);
   background: var(--theme-dark);
 }
-.quota-card-summary-head {
+.quota-card-summary-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.quota-card-summary-line {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-width: 0;
-}
-.quota-card-summary-overall {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
   font-family: var(--font-mono);
   font-size: 12px;
-  font-weight: 700;
   color: #fff;
   white-space: nowrap;
 }
-.quota-card-summary-overall span {
-  color: var(--theme-orange);
-  font-size: 18px;
+.summary-line-prefix {
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--theme-text-muted);
+  text-transform: uppercase;
 }
-.quota-card-summary-pool {
-  color: rgba(255, 255, 255, 0.72);
-  font-family: var(--font-mono);
+.summary-line-values {
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+}
+.summary-line-sep {
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 400;
+  margin: 0 1px;
+}
+.summary-line-provider {
   font-size: 11px;
   font-weight: 600;
+  color: var(--theme-orange);
   text-transform: uppercase;
-  white-space: nowrap;
-}
-.quota-card.quota-card-summary .quota-card-windows {
-  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
-  gap: 10px;
-  min-width: 0;
-}
-.quota-card.quota-card-summary .pp-pool-avg-cell {
-  min-width: 0;
-  width: 100%;
-}
-.quota-card.quota-card-summary .pp-pool-avg-header {
-  justify-content: space-between;
-  gap: 4px;
-  min-width: 0;
-}
-.quota-card.quota-card-summary .pp-pool-avg-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.quota-card.quota-card-summary .pp-pool-avg-value {
-  color: #fff;
-  flex-shrink: 0;
-}
-.quota-card.quota-card-summary .pp-bar-track {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-}
-.quota-card.quota-card-summary .pp-bar-fill {
-  max-width: 100%;
 }
