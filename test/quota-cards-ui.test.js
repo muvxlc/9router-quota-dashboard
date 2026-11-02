@@ -25,10 +25,11 @@ test('the summary card renders after all account cards', () => {
   assert.equal((cardsSrc.match(/quota-card-summary"/g) || []).length, 1, 'exactly one summary card');
 });
 
-test('the summary card shows 2-line per-provider average summary with 5H / W header and no progress bars', () => {
+test('the summary card shows 2-line per-provider average summary with 5-HOUR / WEEKLY header and no progress bars', () => {
   const block = summaryBlock(cardsSrc);
   assert.match(block, /className="quota-card-summary-header"/);
-  assert.match(block, /summary-header-cols.*5H \/ W/);
+  assert.match(block, /summary-header-col-5h.*5-HOUR/);
+  assert.match(block, /summary-header-col-w.*WEEKLY/);
   assert.match(block, /className="quota-card-summary-lines"/);
   assert.match(block, /className="quota-card-summary-line tabular-nums"/);
   assert.match(block, /summary-line-prefix.*AVG/);
@@ -65,7 +66,7 @@ test('cards.css styles the summary card without restyling .quota-card', () => {
   assert.match(latestCss, /\.quota-card\.quota-card-summary\s*\{[^}]*cursor:\s*default/s);
   assert.match(latestCss, /\.quota-card\.quota-card-summary\s*\{[^}]*background:\s*var\(--theme-dark\)/s);
   assert.match(latestCss, /\.quota-card-summary-header\s*\{/);
-  assert.match(latestCss, /\.summary-header-cols\s*\{[^}]*color:\s*var\(--theme-orange\)/s);
+  assert.match(latestCss, /\.summary-header-col-5h\s*\{[^}]*color:\s*var\(--theme-orange\)/s);
   assert.match(latestCss, /\.summary-val-5h\s*\{[^}]*color:\s*var\(--theme-orange\)/s);
   assert.match(latestCss, /\.quota-card-summary-lines\s*\{/);
   assert.match(latestCss, /\.quota-card-summary-line\s*\{/);

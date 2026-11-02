@@ -280,28 +280,41 @@
   background: var(--theme-dark);
 }
 .quota-card-summary-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   padding-bottom: 4px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 2px;
 }
-.summary-header-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+.summary-col-tag {
+  display: block;
 }
-.summary-header-cols {
+.summary-col-meta {
+  display: block;
+}
+.summary-col-headers {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 700;
-  color: var(--theme-orange);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
+}
+.summary-header-col-5h {
+  color: var(--theme-orange);
+}
+.summary-header-sep {
+  color: rgba(255, 255, 255, 0.35);
+  font-weight: 400;
+}
+.summary-header-col-w {
+  color: rgba(255, 255, 255, 0.9);
 }
 .quota-card-summary-lines {
   display: flex;
@@ -310,9 +323,9 @@
   width: 100%;
 }
 .quota-card-summary-line {
-  display: flex;
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -330,7 +343,8 @@
   font-size: 14px;
   display: inline-flex;
   align-items: baseline;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
 }
 .summary-val-5h {
   color: var(--theme-orange);
@@ -347,4 +361,5 @@
   font-weight: 600;
   color: rgba(255, 255, 255, 0.82);
   text-transform: uppercase;
+  text-align: right;
 }

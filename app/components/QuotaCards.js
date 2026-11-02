@@ -136,8 +136,13 @@ export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }
 
         <div className="quota-card quota-card-summary" aria-label="Average remaining quota across listed accounts">
           <div className="quota-card-summary-header">
-            <span className="summary-header-label">AVG</span>
-            <span className="summary-header-cols">5H / W</span>
+            <span className="summary-col-tag" aria-hidden="true" />
+            <div className="summary-col-headers">
+              <span className="summary-header-col-5h">5-HOUR</span>
+              <span className="summary-header-sep">/</span>
+              <span className="summary-header-col-w">WEEKLY</span>
+            </div>
+            <span className="summary-col-meta" aria-hidden="true" />
           </div>
           <div className="quota-card-summary-lines">
             {providerSummaries.map((ps) => (
@@ -148,11 +153,11 @@ export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }
                 title={`${ps.label.toUpperCase()}: 5h ${ps.val5h} / Weekly ${ps.valWeekly} (${ps.count}/${ps.total})`}
               >
                 <span className="summary-line-prefix">AVG</span>
-                <span className="summary-line-values">
+                <div className="summary-line-values">
                   <span className="summary-val-5h">{ps.val5h}</span>
                   <span className="summary-line-sep">/</span>
                   <span className="summary-val-w">{ps.valWeekly}</span>
-                </span>
+                </div>
                 <span className="summary-line-provider">
                   {ps.label} {ps.count}/{ps.total}
                 </span>
