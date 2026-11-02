@@ -287,10 +287,15 @@ export default function DashboardPage() {
     });
   }, [presentedConnections, quotas]);
 
-  const codexAccounts = useMemo(
-    () => enrichedAccounts.filter((a) => (a.provider || '').toLowerCase() === 'codex'),
+  const liveModelAccounts = useMemo(
+    () =>
+      enrichedAccounts.filter((a) => {
+        const p = (a.provider || '').toLowerCase();
+        return p === 'codex' || p === 'antigravity';
+      }),
     [enrichedAccounts]
   );
+  const codexAccounts = liveModelAccounts;
 
   const selectedAccount = useMemo(() => {
     if (!selectedAccountId) return null;
@@ -437,7 +442,7 @@ export default function DashboardPage() {
         <main>
           <LiveModelsView
             onSessionLoss={handleSessionLoss}
-            accounts={codexAccounts}
+            accounts={liveModelAccounts}
             onSelectAccount={(acc) => setSelectedAccountId(acc ? acc.id : null)}
           />
         </main>
