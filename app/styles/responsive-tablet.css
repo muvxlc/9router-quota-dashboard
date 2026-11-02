@@ -220,4 +220,10 @@
   .live-models-empty-state {
     min-height: 200px;
   }
+  .quota-cards {
+    max-height: 48vh;
+  }
+  .quota-cards-grid {
+    max-height: calc(48vh - 44px);
+  }
 }

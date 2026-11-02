@@ -4,7 +4,15 @@ import StatusPill from './StatusPill.js';
 import QuotaWindowCell from './QuotaWindowCell.js';
 import { calculateDepletionVelocity, getAccountsQuotaAverages } from '../../lib/client/selectors.js';
 
+function isAllowedWindow(key) {
+  if (!key) return false;
+  const k = String(key).toLowerCase();
+  return k === 'gemini' || k === 'gemini_weekly' || k === 'session' || k === '5h' || k === 'weekly';
+}
+
 function windowLabel(win) {
+  if (win.key === 'gemini') return 'Flash / Pro';
+  if (win.key === 'gemini_weekly') return 'Weekly';
   if (win.key === 'session' || win.key === '5h') return '5-Hour';
   if (win.key === 'weekly') return 'Weekly';
   return win.shortLabel || win.label || win.key;
@@ -17,7 +25,20 @@ function formatAverage(value) {
 export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }) {
   if (!Array.isArray(accounts) || accounts.length === 0) return null;
 
-  const averages = getAccountsQuotaAverages(accounts);
+  // Filter account windows and averages to core windows: flash/pro(5h) / weekly
+  const filteredAccounts = accounts.map((acc) => {
+    if (!acc.quota || !Array.isArray(acc.quota.windows)) return acc;
+    return {
+      ...acc,
+      quota: {
+        ...acc.quota,
+        windows: acc.quota.windows.filter((w) => isAllowedWindow(w?.key)),
+      },
+    };
+  });
+
+  const averages = getAccountsQuotaAverages(filteredAccounts);
+  const filteredAvgWindows = averages.windows.filter((avg) => isAllowedWindow(avg?.key));
   const poolLabel = (accounts[0]?.provider || 'pool').toLowerCase();
 
   return (
@@ -30,7 +51,7 @@ export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }
       </div>
 
       <div className="quota-cards-grid">
-        {accounts.map((acc) => {
+        {filteredAccounts.map((acc) => {
           const windows = Array.isArray(acc.quota?.windows) ? acc.quota.windows : [];
           const velocity = calculateDepletionVelocity(acc.quota);
           const alias = acc.displayAlias || acc.label || acc.id;
@@ -91,7 +112,7 @@ export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }
             </span>
           </div>
           <div className="quota-card-windows">
-            {averages.windows.map((avg) => {
+            {filteredAvgWindows.map((avg) => {
               const hasAvg = typeof avg.average === 'number' && avg.count > 0;
               const fillWidth = hasAvg ? Math.min(Math.max(avg.average, 0), 100) : 0;
               const barColorClass = !hasAvg

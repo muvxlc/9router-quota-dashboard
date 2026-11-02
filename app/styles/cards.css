@@ -157,6 +157,9 @@
 /* Compact quota cards (Live Models page) */
 .quota-cards {
   flex-shrink: 0;
+  max-height: 48vh;
+  display: flex;
+  flex-direction: column;
 }
 .quota-cards-grid {
   display: grid;
@@ -164,6 +167,8 @@
   gap: 10px;
   padding: 12px 16px;
   min-width: 0;
+  overflow-y: auto;
+  max-height: calc(48vh - 44px);
 }
 .quota-card {
   display: flex;
