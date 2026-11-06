@@ -327,13 +327,14 @@
 }
 .quota-card-summary-line {
   display: grid;
-  grid-template-columns: 32px 1fr auto;
-  align-items: center;
+  grid-template-columns: 32px 1fr 92px;
+  align-items: baseline;
   gap: 8px;
   font-family: var(--font-mono);
   font-size: 12px;
   color: #fff;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .summary-line-prefix {
   font-weight: 700;
@@ -344,10 +345,19 @@
 .summary-line-values {
   font-weight: 700;
   font-size: 14px;
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 1fr 12px 1fr;
   align-items: baseline;
-  justify-content: center;
-  gap: 6px;
+  gap: 0;
+}
+.summary-val-5h {
+  text-align: right;
+}
+.summary-val-w {
+  text-align: left;
+}
+.summary-line-sep {
+  text-align: center;
 }
 .summary-val-5h {
   color: var(--theme-orange);
@@ -365,4 +375,5 @@
   color: rgba(255, 255, 255, 0.82);
   text-transform: uppercase;
   text-align: right;
+  white-space: nowrap;
 }

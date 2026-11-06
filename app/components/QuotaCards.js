@@ -81,7 +81,7 @@ export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount
   const providerSummaries = [
     getProviderSummaryLine('antigravity', 'agy', agyAccounts),
     getProviderSummaryLine('codex', 'codex', codexAccounts),
-    getProviderSummaryLine('opencode', 'opencode', opencodeAccounts),
+    getProviderSummaryLine('opencode', 'ocg', opencodeAccounts),
     getProviderSummaryLine('other', 'other', otherAccounts),
   ].filter(Boolean);
 
