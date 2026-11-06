@@ -45,8 +45,12 @@ function getProviderSummaryLine(providerKey, label, providerAccounts) {
 }
 
 export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount = () => {} }) {
-  // Inactive accounts (active === false) are hidden from cards, count, and averages.
-  const accounts = Array.isArray(allAccounts) ? allAccounts.filter((acc) => acc?.active !== false) : [];
+  // Inactive accounts are hidden from cards, count, and averages.
+  // Match both the raw flag and the derived pill status so a shape drift in
+  // either one cannot leak an Inactive card back in.
+  const accounts = Array.isArray(allAccounts)
+    ? allAccounts.filter((acc) => acc?.active !== false && acc?.effectiveStatus?.status !== 'inactive')
+    : [];
   if (accounts.length === 0) return null;
 
   // Filter account windows and averages to core windows: flash/pro(5h) / weekly

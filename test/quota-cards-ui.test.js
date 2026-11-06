@@ -21,9 +21,13 @@ test('QuotaCards imports the cross-account average selector', () => {
 });
 
 test('inactive accounts (active === false) are excluded before rendering cards', () => {
-  assert.match(cardsSrc, /filter\(\(acc\) => acc\?\.active !== false\)/);
+  assert.match(cardsSrc, /acc\?\.active !== false/);
   const filterIdx = cardsSrc.indexOf('acc?.active !== false');
   assert.ok(filterIdx > 0 && filterIdx < cardsSrc.indexOf('filteredAccounts.map('));
+});
+
+test('derived inactive status is excluded even when the raw active flag is missing', () => {
+  assert.match(cardsSrc, /effectiveStatus\?\.status !== 'inactive'/);
 });
 
 test('the summary card renders after all account cards', () => {
