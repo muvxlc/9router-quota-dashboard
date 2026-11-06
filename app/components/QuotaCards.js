@@ -106,7 +106,7 @@ export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount
               key={acc.id}
               role="button"
               tabIndex={0}
-              className={`quota-card ${acc.effectiveStatus?.status === 'stale' ? 'stale' : ''}`}
+              className={`quota-card ${acc.effectiveStatus?.status === 'stale' ? 'stale' : ''}${windows.length >= 3 ? ' quota-card-wide' : ''}`}
               onClick={() => onSelectAccount(acc)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
