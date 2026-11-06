@@ -71,10 +71,10 @@ test('an unavailable or unknown average renders an em dash, never NaN', () => {
   assert.ok(cardsSrc.includes(": '—'"), 'null average must render an em dash');
 });
 
-test('opencode accounts render as cards without their own AVG summary line', () => {
+test('opencode-go renders as cards with a labeled OCG fallback row and no OTHER row', () => {
   assert.match(cardsSrc, /rolling/);
-  assert.doesNotMatch(cardsSrc, /getProviderSummaryLine\('opencode'/);
-  assert.doesNotMatch(cardsSrc, /opencodeAccounts/);
+  assert.match(cardsSrc, /ocgAccounts/);
+  assert.match(cardsSrc, /getProviderSummaryLine\('ocg', 'ocg', ocgAccounts\)/);
   const pageSrc = fs.readFileSync(path.join(projectRoot, 'app/page.js'), 'utf8');
   assert.match(pageSrc, /opencode-go/);
 });

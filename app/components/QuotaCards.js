@@ -70,14 +70,19 @@ export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount
   // Group accounts by provider for 2-line AVG summary
   const agyAccounts = filteredAccounts.filter((a) => (a.provider || '').toLowerCase() === 'antigravity');
   const codexAccounts = filteredAccounts.filter((a) => (a.provider || '').toLowerCase() === 'codex');
+  const ocgAccounts = filteredAccounts.filter((a) => {
+    const p = (a.provider || '').toLowerCase();
+    return p === 'opencode' || p === 'opencode-go';
+  });
   const otherAccounts = filteredAccounts.filter((a) => {
     const p = (a.provider || '').toLowerCase();
-    return p !== 'antigravity' && p !== 'codex';
+    return p !== 'antigravity' && p !== 'codex' && p !== 'opencode' && p !== 'opencode-go';
   });
 
   const providerSummaries = [
     getProviderSummaryLine('antigravity', 'agy', agyAccounts),
     getProviderSummaryLine('codex', 'codex', codexAccounts),
+    getProviderSummaryLine('ocg', 'ocg', ocgAccounts),
     getProviderSummaryLine('other', 'other', otherAccounts),
   ].filter(Boolean);
 
