@@ -61,7 +61,7 @@ const SCENARIOS = {
     label: 'Current pools (4 / 14 / 1)',
     groups: [
       makePool('codex', 'Codex', ['session', 'weekly'], 4, 'Codex'),
-      makePool('antigravity', 'Antigravity', ['gemini', 'gemini_weekly'], 14, 'Account', 4),
+      makePool('antigravity', 'Antigravity', ['gemini', 'gemini_weekly'], 14, 'Agy', 4),
       makePool('glm', 'Glm', ['session'], 1, 'Glm'),
     ],
   },
@@ -69,7 +69,7 @@ const SCENARIOS = {
     label: 'New pool added (+ Claude x8)',
     groups: [
       makePool('codex', 'Codex', ['session', 'weekly'], 4, 'Codex'),
-      makePool('antigravity', 'Antigravity', ['gemini', 'gemini_weekly'], 14, 'Account', 4),
+      makePool('antigravity', 'Antigravity', ['gemini', 'gemini_weekly'], 14, 'Agy', 4),
       makePool('glm', 'Glm', ['session'], 1, 'Glm'),
       makePool('claude', 'Claude', ['session', 'weekly'], 8, 'Claude'),
     ],

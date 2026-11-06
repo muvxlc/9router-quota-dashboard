@@ -31,13 +31,13 @@ test('buildAccountPresentation assigns deterministic provider-scoped aliases ind
   const presMap = buildAccountPresentation(allConnections);
 
   // Antigravity accounts must sort naturally by ID (ag-1, ag-2, ag-10)
-  assert.equal(presMap.get('ag-1').alias, 'Account 01');
+  assert.equal(presMap.get('ag-1').alias, 'Agy 01');
   assert.equal(presMap.get('ag-1').maskedIdentity, 'ag-01***@example.test');
 
-  assert.equal(presMap.get('ag-2').alias, 'Account 02');
+  assert.equal(presMap.get('ag-2').alias, 'Agy 02');
   assert.equal(presMap.get('ag-2').maskedIdentity, 'ag-02***@example.test');
 
-  assert.equal(presMap.get('ag-10').alias, 'Account 03');
+  assert.equal(presMap.get('ag-10').alias, 'Agy 03');
   assert.equal(presMap.get('ag-10').maskedIdentity, 'ag-10***@example.test');
 
   // Codex accounts must have Codex 01, Codex 02
@@ -50,5 +50,5 @@ test('buildAccountPresentation assigns deterministic provider-scoped aliases ind
   // Verify filtering a subset does NOT alter the assigned alias from the map
   const activeOnlySubset = allConnections.filter(c => c.active);
   const activeAg2 = activeOnlySubset.find(c => c.id === 'ag-2');
-  assert.equal(presMap.get(activeAg2.id).alias, 'Account 02');
+  assert.equal(presMap.get(activeAg2.id).alias, 'Agy 02');
 });
