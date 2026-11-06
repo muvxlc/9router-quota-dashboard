@@ -20,6 +20,12 @@ test('QuotaCards imports the cross-account average selector', () => {
   assert.match(cardsSrc, /import \{[^}]*getAccountsQuotaAverages[^}]*\} from '\.\.\/\.\.\/lib\/client\/selectors\.js'/s);
 });
 
+test('inactive accounts (active === false) are excluded before rendering cards', () => {
+  assert.match(cardsSrc, /filter\(\(acc\) => acc\?\.active !== false\)/);
+  const filterIdx = cardsSrc.indexOf('acc?.active !== false');
+  assert.ok(filterIdx > 0 && filterIdx < cardsSrc.indexOf('filteredAccounts.map('));
+});
+
 test('the summary card renders after all account cards', () => {
   assert.ok(cardsSrc.indexOf('filteredAccounts.map(') < cardsSrc.indexOf('className="quota-card quota-card-summary"'));
   assert.equal((cardsSrc.match(/quota-card-summary"/g) || []).length, 1, 'exactly one summary card');

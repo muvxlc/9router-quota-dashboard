@@ -44,8 +44,10 @@ function getProviderSummaryLine(providerKey, label, providerAccounts) {
   };
 }
 
-export default function QuotaCards({ accounts = [], onSelectAccount = () => {} }) {
-  if (!Array.isArray(accounts) || accounts.length === 0) return null;
+export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount = () => {} }) {
+  // Inactive accounts (active === false) are hidden from cards, count, and averages.
+  const accounts = Array.isArray(allAccounts) ? allAccounts.filter((acc) => acc?.active !== false) : [];
+  if (accounts.length === 0) return null;
 
   // Filter account windows and averages to core windows: flash/pro(5h) / weekly
   const filteredAccounts = accounts.map((acc) => {
