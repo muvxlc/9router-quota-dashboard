@@ -74,6 +74,8 @@ test('an unavailable or unknown average renders an em dash, never NaN', () => {
 test('opencode accounts get their own provider summary line', () => {
   assert.match(cardsSrc, /opencodeAccounts/);
   assert.match(cardsSrc, /getProviderSummaryLine\('opencode', 'opencode', opencodeAccounts\)/);
+  assert.match(cardsSrc, /opencode-go/);
+  assert.match(cardsSrc, /rolling/);
   assert.doesNotMatch(cardsSrc, /p !== 'antigravity' && p !== 'codex';/);
 });
 

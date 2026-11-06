@@ -7,7 +7,7 @@ import { calculateDepletionVelocity, getAccountsQuotaAverages } from '../../lib/
 function isAllowedWindow(key) {
   if (!key) return false;
   const k = String(key).toLowerCase();
-  return k === 'gemini' || k === 'gemini_weekly' || k === 'session' || k === '5h' || k === 'weekly';
+  return k === 'gemini' || k === 'gemini_weekly' || k === 'session' || k === '5h' || k === 'weekly' || k === 'rolling' || k === 'monthly';
 }
 
 function windowLabel(win) {
@@ -15,6 +15,8 @@ function windowLabel(win) {
   if (win.key === 'gemini_weekly') return 'Weekly';
   if (win.key === 'session' || win.key === '5h') return '5-Hour';
   if (win.key === 'weekly') return 'Weekly';
+  if (win.key === 'rolling') return 'Rolling';
+  if (win.key === 'monthly') return 'Monthly';
   return win.shortLabel || win.label || win.key;
 }
 
@@ -26,7 +28,7 @@ function getProviderSummaryLine(providerKey, label, providerAccounts) {
   if (providerAccounts.length === 0) return null;
   const avg = getAccountsQuotaAverages(providerAccounts);
   // find 5h (or gemini flash/pro) and weekly windows
-  const win5h = avg.windows.find((w) => w.key === 'session' || w.key === '5h' || w.key === 'gemini');
+  const win5h = avg.windows.find((w) => w.key === 'session' || w.key === '5h' || w.key === 'gemini' || w.key === 'rolling');
   const winWeekly = avg.windows.find((w) => w.key === 'weekly' || w.key === 'gemini_weekly');
 
   const val5h = formatAverage(win5h?.average);
@@ -68,10 +70,13 @@ export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount
   // Group accounts by provider for 2-line AVG summary
   const agyAccounts = filteredAccounts.filter((a) => (a.provider || '').toLowerCase() === 'antigravity');
   const codexAccounts = filteredAccounts.filter((a) => (a.provider || '').toLowerCase() === 'codex');
-  const opencodeAccounts = filteredAccounts.filter((a) => (a.provider || '').toLowerCase() === 'opencode');
+  const opencodeAccounts = filteredAccounts.filter((a) => {
+    const p = (a.provider || '').toLowerCase();
+    return p === 'opencode' || p === 'opencode-go';
+  });
   const otherAccounts = filteredAccounts.filter((a) => {
     const p = (a.provider || '').toLowerCase();
-    return p !== 'antigravity' && p !== 'codex' && p !== 'opencode';
+    return p !== 'antigravity' && p !== 'codex' && p !== 'opencode' && p !== 'opencode-go';
   });
 
   const providerSummaries = [
