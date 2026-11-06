@@ -291,7 +291,7 @@ export default function DashboardPage() {
     () =>
       enrichedAccounts.filter((a) => {
         const p = (a.provider || '').toLowerCase();
-        return p === 'codex' || p === 'antigravity';
+        return p === 'codex' || p === 'antigravity' || p === 'opencode';
       }),
     [enrichedAccounts]
   );

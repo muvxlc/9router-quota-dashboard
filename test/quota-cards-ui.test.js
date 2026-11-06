@@ -71,6 +71,12 @@ test('an unavailable or unknown average renders an em dash, never NaN', () => {
   assert.ok(cardsSrc.includes(": '—'"), 'null average must render an em dash');
 });
 
+test('opencode accounts get their own provider summary line', () => {
+  assert.match(cardsSrc, /opencodeAccounts/);
+  assert.match(cardsSrc, /getProviderSummaryLine\('opencode', 'opencode', opencodeAccounts\)/);
+  assert.doesNotMatch(cardsSrc, /p !== 'antigravity' && p !== 'codex';/);
+});
+
 test('cards.css styles the summary card without restyling .quota-card', () => {
   const latestCss = fs.readFileSync(path.join(projectRoot, 'app/styles/cards.css'), 'utf8');
   assert.match(latestCss, /\.quota-card\.quota-card-summary\s*\{[^}]*cursor:\s*default/s);
