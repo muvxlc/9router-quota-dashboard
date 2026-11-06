@@ -11,11 +11,12 @@ function isAllowedWindow(key) {
 }
 
 function windowLabel(win) {
-  if (win.key === 'gemini') return 'Flash / Pro';
-  if (win.key === 'gemini_weekly') return 'Weekly';
-  if (win.key === 'session' || win.key === '5h') return '5-Hour';
-  if (win.key === 'weekly') return 'Weekly';
-  if (win.key === 'rolling') return 'Rolling';
+  const k = typeof win.key === 'string' ? win.key.toLowerCase() : win.key;
+  if (k === 'gemini') return 'Flash / Pro';
+  if (k === 'gemini_weekly') return 'Weekly';
+  if (k === 'session' || k === '5h') return '5-Hour';
+  if (k === 'weekly') return 'Weekly';
+  if (k === 'rolling') return 'Rolling';
   return win.shortLabel || win.label || win.key;
 }
 
@@ -69,19 +70,14 @@ export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount
   // Group accounts by provider for 2-line AVG summary
   const agyAccounts = filteredAccounts.filter((a) => (a.provider || '').toLowerCase() === 'antigravity');
   const codexAccounts = filteredAccounts.filter((a) => (a.provider || '').toLowerCase() === 'codex');
-  const opencodeAccounts = filteredAccounts.filter((a) => {
-    const p = (a.provider || '').toLowerCase();
-    return p === 'opencode' || p === 'opencode-go';
-  });
   const otherAccounts = filteredAccounts.filter((a) => {
     const p = (a.provider || '').toLowerCase();
-    return p !== 'antigravity' && p !== 'codex' && p !== 'opencode' && p !== 'opencode-go';
+    return p !== 'antigravity' && p !== 'codex';
   });
 
   const providerSummaries = [
     getProviderSummaryLine('antigravity', 'agy', agyAccounts),
     getProviderSummaryLine('codex', 'codex', codexAccounts),
-    getProviderSummaryLine('opencode', 'ocg', opencodeAccounts),
     getProviderSummaryLine('other', 'other', otherAccounts),
   ].filter(Boolean);
 
