@@ -7,7 +7,7 @@ import { calculateDepletionVelocity, getAccountsQuotaAverages } from '../../lib/
 function isAllowedWindow(key) {
   if (!key) return false;
   const k = String(key).toLowerCase();
-  return k === 'gemini' || k === 'gemini_weekly' || k === 'session' || k === '5h' || k === 'weekly' || k === 'rolling' || k === 'monthly';
+  return k === 'gemini' || k === 'gemini_weekly' || k === 'session' || k === '5h' || k === 'weekly' || k === 'rolling';
 }
 
 function windowLabel(win) {
@@ -16,7 +16,6 @@ function windowLabel(win) {
   if (win.key === 'session' || win.key === '5h') return '5-Hour';
   if (win.key === 'weekly') return 'Weekly';
   if (win.key === 'rolling') return 'Rolling';
-  if (win.key === 'monthly') return 'Monthly';
   return win.shortLabel || win.label || win.key;
 }
 
@@ -106,7 +105,7 @@ export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount
               key={acc.id}
               role="button"
               tabIndex={0}
-              className={`quota-card ${acc.effectiveStatus?.status === 'stale' ? 'stale' : ''}${windows.length >= 3 ? ' quota-card-wide' : ''}`}
+              className={`quota-card ${acc.effectiveStatus?.status === 'stale' ? 'stale' : ''}`}
               onClick={() => onSelectAccount(acc)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {

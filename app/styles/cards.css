@@ -191,9 +191,6 @@
 .quota-card.stale {
   background: rgba(245, 158, 11, 0.04);
 }
-.quota-card.quota-card-wide {
-  grid-column: span 2;
-}
 .quota-card-head {
   display: flex;
   align-items: center;
