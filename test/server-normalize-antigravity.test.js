@@ -22,14 +22,15 @@ test('normalizeQuotaData collapses real 9router Antigravity model IDs into famil
       'gemini-3.1-flash-image': { used: 0, total: 1000, resetAt: null, remainingPercentage: 100, unlimited: false, displayName: 'Gemini 3.1 Flash Image' },
       'gemini_weekly': { used: 100, total: 1000, resetAt: '2026-09-28T00:00:00.000Z', remainingPercentage: 90, unlimited: false, displayName: 'Gemini (Weekly)' },
       'claude_gpt_weekly': { used: 200, total: 1000, resetAt: '2026-09-28T00:00:00.000Z', remainingPercentage: 80, unlimited: false, displayName: 'Claude & GPT (Weekly)' },
+      'gemini-argon-wtu-weekly': { used: 300, total: 1000, resetAt: '2026-09-28T00:00:00.000Z', remainingPercentage: 70, unlimited: false, displayName: 'Gemini 4 Argon Weekly' },
     },
   };
 
   const normalized = normalizeQuotaData('c-test-1', 'antigravity', rawAntigravity);
   assert.equal(normalized.status, 'ok');
 
-  // Should collapse 16 models into 6 windows: gemini, claude, gpt, image, gemini_weekly, claude_gpt_weekly
-  assert.equal(normalized.windows.length, 6);
+  // Should collapse 17 quota entries into 7 windows, including Argon's separate weekly pool.
+  assert.equal(normalized.windows.length, 7);
 
   const keys = normalized.windows.map((w) => w.key);
   assert.ok(keys.includes('gemini'));
@@ -38,6 +39,7 @@ test('normalizeQuotaData collapses real 9router Antigravity model IDs into famil
   assert.ok(keys.includes('gemini-3.1-flash-image'));
   assert.ok(keys.includes('gemini_weekly'));
   assert.ok(keys.includes('claude_gpt_weekly'));
+  assert.ok(keys.includes('argon_weekly'));
 
   const geminiWin = normalized.windows.find((w) => w.key === 'gemini');
   assert.equal(geminiWin.remainingPercent, 46.3);
@@ -54,6 +56,10 @@ test('normalizeQuotaData collapses real 9router Antigravity model IDs into famil
   const imageWin = normalized.windows.find((w) => w.key === 'gemini-3.1-flash-image');
   assert.equal(imageWin.remainingPercent, 100);
   assert.equal(imageWin.label, 'Gemini 3.1 Flash Image');
+
+  const argonWin = normalized.windows.find((w) => w.key === 'argon_weekly');
+  assert.equal(argonWin.remainingPercent, 70);
+  assert.equal(argonWin.label, 'Argon Weekly');
 });
 
 test('normalizeQuotaData collapses Antigravity models keyed by display names', () => {

@@ -3,11 +3,34 @@ import assert from 'node:assert/strict';
 
 import {
   deriveAccountStatus,
+  getLiveModelQuotaWindows,
   getProviderCommonWindows,
   groupAccountsByProvider,
   filterAndSortAccounts,
   getProviderQuotaAverages,
 } from '../lib/client/selectors.js';
+
+test('Live Models keeps three selected Antigravity windows and two Codex windows', () => {
+  const windows = [
+    { key: 'gemini' },
+    { key: 'gemini_weekly' },
+    { key: 'argon_weekly' },
+    { key: 'claude' },
+    { key: 'session' },
+    { key: 'weekly' },
+    { key: 'review_session' },
+    { key: 'rolling' },
+  ];
+
+  assert.deepEqual(
+    getLiveModelQuotaWindows('antigravity', windows).map((window) => window.key),
+    ['gemini', 'gemini_weekly', 'argon_weekly'],
+  );
+  assert.deepEqual(
+    getLiveModelQuotaWindows('codex', windows).map((window) => window.key),
+    ['session', 'weekly'],
+  );
+});
 
 test('deriveAccountStatus identifies inactive, unavailable, no-data, exhausted, low, and healthy', () => {
   // Inactive connection

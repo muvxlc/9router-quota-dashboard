@@ -2,18 +2,17 @@
 
 import StatusPill from './StatusPill.js';
 import QuotaWindowCell from './QuotaWindowCell.js';
-import { calculateDepletionVelocity, getAccountsQuotaAverages } from '../../lib/client/selectors.js';
-
-function isAllowedWindow(key) {
-  if (!key) return false;
-  const k = String(key).toLowerCase();
-  return k === 'gemini' || k === 'gemini_weekly' || k === 'session' || k === '5h' || k === 'weekly' || k === 'rolling';
-}
+import {
+  calculateDepletionVelocity,
+  getAccountsQuotaAverages,
+  getLiveModelQuotaWindows,
+} from '../../lib/client/selectors.js';
 
 function windowLabel(win) {
   const k = typeof win.key === 'string' ? win.key.toLowerCase() : win.key;
-  if (k === 'gemini') return 'Flash / Pro';
+  if (k === 'gemini') return 'Flash';
   if (k === 'gemini_weekly') return 'Weekly';
+  if (k === 'argon_weekly') return 'Argon Weekly';
   if (k === 'session' || k === '5h') return '5-Hour';
   if (k === 'weekly') return 'Weekly';
   if (k === 'rolling') return 'Rolling';
@@ -62,7 +61,7 @@ export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount
       ...acc,
       quota: {
         ...acc.quota,
-        windows: acc.quota.windows.filter((w) => isAllowedWindow(w?.key)),
+        windows: getLiveModelQuotaWindows(acc.provider, acc.quota.windows),
       },
     };
   });
