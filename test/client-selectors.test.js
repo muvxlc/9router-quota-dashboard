@@ -236,7 +236,7 @@ test('filterAndSortAccounts distinguishes active connection state from quota hea
   assert.equal(activeExhausted[0].id, 'acc-active-exhausted');
 });
 
-test('getProviderCommonWindows and groupAccountsByProvider default Antigravity to Gemini core windows and preserve all backend windows', () => {
+test('getProviderCommonWindows and groupAccountsByProvider default Antigravity to Gemini + Argon core windows and preserve all backend windows', () => {
   const agAccounts = [
     {
       id: 'ag-1',
@@ -266,7 +266,7 @@ test('getProviderCommonWindows and groupAccountsByProvider default Antigravity t
   ];
 
   const collapsedWindows = getProviderCommonWindows(agAccounts, { provider: 'antigravity', expanded: false });
-  assert.deepEqual(collapsedWindows.map((w) => w.key), ['gemini', 'gemini_weekly']);
+  assert.deepEqual(collapsedWindows.map((w) => w.key), ['gemini', 'gemini_weekly', 'argon_weekly']);
 
   const expandedWindows = getProviderCommonWindows(agAccounts, { provider: 'antigravity', expanded: true });
   assert.deepEqual(
@@ -287,7 +287,7 @@ test('getProviderCommonWindows and groupAccountsByProvider default Antigravity t
   assert.equal(groupsCollapsed.length, 1);
   const agGroup = groupsCollapsed[0];
   assert.equal(agGroup.provider, 'antigravity');
-  assert.deepEqual(agGroup.windows.map((w) => w.key), ['gemini', 'gemini_weekly']);
+  assert.deepEqual(agGroup.windows.map((w) => w.key), ['gemini', 'gemini_weekly', 'argon_weekly']);
   assert.equal(agGroup.extraWindowsCount, 4);
   assert.equal(agGroup.allWindows.length, 6);
   assert.equal(agGroup.isExpanded, false);
@@ -323,6 +323,8 @@ test('getProviderCommonWindows assigns short visual labels and preserves accessi
   assert.equal(windows[0].label, 'Gemini (Flash / Pro)');
   assert.equal(windows[1].shortLabel, 'Weekly');
   assert.equal(windows[1].label, 'Gemini Weekly');
+  assert.equal(windows[2].shortLabel, 'Ar/Weekly');
+  assert.equal(windows[2].label, 'Argon Weekly');
 });
 
 test('regression: activeFilter default active excludes inactive accounts, all includes both', () => {
@@ -425,6 +427,7 @@ test('getProviderQuotaAverages computes pure per-provider quota averages for Cod
           windows: [
             { key: 'gemini', remainingPercent: 75, unlimited: false },
             { key: 'gemini_weekly', remainingPercent: 0, unlimited: false },
+            { key: 'argon_weekly', remainingPercent: 70, unlimited: false },
           ],
         },
       },
@@ -436,7 +439,7 @@ test('getProviderQuotaAverages computes pure per-provider quota averages for Cod
   };
 
   const agAverages = getProviderQuotaAverages(antigravityGroup);
-  assert.equal(agAverages.length, 2);
+  assert.equal(agAverages.length, 3);
   assert.deepEqual(agAverages[0], {
     key: 'gemini',
     label: 'Gemini (Flash / Pro)',
@@ -448,6 +451,12 @@ test('getProviderQuotaAverages computes pure per-provider quota averages for Cod
     label: 'Gemini Weekly',
     average: 30,
     count: 2,
+  });
+  assert.deepEqual(agAverages[2], {
+    key: 'argon_weekly',
+    label: 'Argon Weekly',
+    average: 70,
+    count: 1,
   });
 
   const emptyGroup = {

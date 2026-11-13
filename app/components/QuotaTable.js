@@ -9,6 +9,7 @@ import { computePoolColumns, getGroupWeight } from '../../lib/client/poolLayout.
 function getAverageLabel(avg) {
   if (avg.key === 'gemini') return 'Flash / Pro';
   if (avg.key === 'gemini_weekly') return 'Weekly';
+  if (avg.key === 'argon_weekly') return 'Argon Weekly';
   if (avg.key === 'session') return '5-Hour';
   if (avg.key === 'weekly') return 'Weekly';
   return avg.label || avg.key;
