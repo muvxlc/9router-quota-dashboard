@@ -23,7 +23,7 @@ test('QuotaCards imports the cross-account average selector', () => {
 test('inactive accounts (active === false) are excluded before rendering cards', () => {
   assert.match(cardsSrc, /acc\?\.active !== false/);
   const filterIdx = cardsSrc.indexOf('acc?.active !== false');
-  assert.ok(filterIdx > 0 && filterIdx < cardsSrc.indexOf('filteredAccounts.map('));
+  assert.ok(filterIdx > 0 && filterIdx < cardsSrc.indexOf('[...filteredAccounts].sort('));
 });
 
 test('derived inactive status is excluded even when the raw active flag is missing', () => {
@@ -31,7 +31,7 @@ test('derived inactive status is excluded even when the raw active flag is missi
 });
 
 test('the summary card renders after all account cards', () => {
-  assert.ok(cardsSrc.indexOf('filteredAccounts.map(') < cardsSrc.indexOf('className="quota-card quota-card-summary"'));
+  assert.ok(cardsSrc.indexOf('[...filteredAccounts].sort(') < cardsSrc.indexOf('className="quota-card quota-card-summary"'));
   assert.equal((cardsSrc.match(/quota-card-summary"/g) || []).length, 1, 'exactly one summary card');
 });
 
@@ -77,6 +77,14 @@ test('opencode-go renders as cards with a labeled OCG fallback row and no OTHER 
   assert.match(cardsSrc, /getProviderSummaryLine\('ocg', 'ocg', ocgAccounts\)/);
   const pageSrc = fs.readFileSync(path.join(projectRoot, 'app/page.js'), 'utf8');
   assert.match(pageSrc, /opencode-go/);
+});
+
+test('cards span window count so 2-bar and 3-bar bars share one width', () => {
+  assert.match(cardsSrc, /quota-card--span1/);
+  assert.match(cardsSrc, /quota-card--span3/);
+  assert.match(cssSrc, /\.quota-cards-grid\s*\{[^}]*minmax\(105px, 1fr\)/s);
+  assert.match(cssSrc, /\.quota-card\s*\{[^}]*grid-column:\s*span 2/s);
+  assert.match(cssSrc, /\.quota-card--span3\s*\{[^}]*grid-column:\s*span 3/s);
 });
 
 test('cards.css styles the summary card without restyling .quota-card', () => {

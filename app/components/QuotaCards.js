@@ -96,17 +96,28 @@ export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount
       </div>
 
       <div className="quota-cards-grid">
-        {filteredAccounts.map((acc) => {
+        {[...filteredAccounts].sort((a, b) => {
+          const order = (p) => {
+            const k = (p || '').toLowerCase();
+            if (k === 'antigravity') return 0;
+            if (k === 'codex') return 1;
+            if (k === 'opencode' || k === 'opencode-go') return 2;
+            return 3;
+          };
+          return order(a.provider) - order(b.provider);
+        }).map((acc) => {
           const windows = Array.isArray(acc.quota?.windows) ? acc.quota.windows : [];
           const velocity = calculateDepletionVelocity(acc.quota);
           const alias = acc.displayAlias || acc.label || acc.id;
+          // ponytail: card spans its window count (max 3 tracks) so 2-bar and 3-bar bars share one width.
+          const spanClass = windows.length === 1 ? ' quota-card--span1' : windows.length >= 3 ? ' quota-card--span3' : '';
 
           return (
             <div
               key={acc.id}
               role="button"
               tabIndex={0}
-              className={`quota-card ${acc.effectiveStatus?.status === 'stale' ? 'stale' : ''}${windows.length === 3 && ['antigravity', 'opencode', 'opencode-go'].includes((acc.provider || '').toLowerCase()) ? ' quota-card--wide' : ''}`}
+              className={`quota-card${spanClass} ${acc.effectiveStatus?.status === 'stale' ? 'stale' : ''}`}
               onClick={() => onSelectAccount(acc)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {

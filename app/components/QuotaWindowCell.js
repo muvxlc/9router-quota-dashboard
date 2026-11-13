@@ -17,8 +17,8 @@ function formatCompactNumber(num) {
 
 function formatCompactUsageText(used, total) {
   if (used === null || used === undefined) return '';
-  if (total === null || total === undefined) return `${formatCompactNumber(used)} used`;
-  return `${formatCompactNumber(used)}/${formatCompactNumber(total)} used`;
+  if (total === null || total === undefined) return `${formatCompactNumber(used)}`;
+  return `${formatCompactNumber(used)}/${formatCompactNumber(total)}`;
 }
 
 export default function QuotaWindowCell({ windowData }) {

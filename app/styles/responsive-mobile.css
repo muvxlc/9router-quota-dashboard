@@ -139,6 +139,16 @@
   .quota-card.quota-card-summary {
     grid-column: 1 / -1;
   }
+
+  /* Single column: 1-, 2- and 3-bar cards each take the full row */
+  .quota-cards-grid {
+    grid-template-columns: 1fr;
+  }
+  .quota-card,
+  .quota-card--span1,
+  .quota-card--span3 {
+    grid-column: auto;
+  }
 }
 
 /* --- Mobile Specific (< 600px) --- */
