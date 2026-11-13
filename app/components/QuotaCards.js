@@ -12,10 +12,11 @@ function windowLabel(win) {
   const k = typeof win.key === 'string' ? win.key.toLowerCase() : win.key;
   if (k === 'gemini') return 'Flash';
   if (k === 'gemini_weekly') return 'Weekly';
-  if (k === 'argon_weekly') return 'Argon Weekly';
+  if (k === 'argon_weekly') return 'Ar/Weekly';
   if (k === 'session' || k === '5h') return '5-Hour';
   if (k === 'weekly') return 'Weekly';
   if (k === 'rolling') return 'Rolling';
+  if (k === 'monthly') return 'Monthly';
   return win.shortLabel || win.label || win.key;
 }
 
@@ -105,7 +106,7 @@ export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount
               key={acc.id}
               role="button"
               tabIndex={0}
-              className={`quota-card ${acc.effectiveStatus?.status === 'stale' ? 'stale' : ''}`}
+              className={`quota-card ${acc.effectiveStatus?.status === 'stale' ? 'stale' : ''}${windows.length === 3 && ['antigravity', 'opencode', 'opencode-go'].includes((acc.provider || '').toLowerCase()) ? ' quota-card--wide' : ''}`}
               onClick={() => onSelectAccount(acc)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -136,7 +137,7 @@ export default function QuotaCards({ accounts: allAccounts = [], onSelectAccount
                 ) : (
                   windows.map((win) => (
                     <div className="quota-card-window" key={win.key}>
-                      <span className="quota-card-window-label">{windowLabel(win)}</span>
+                      <span className={`quota-card-window-label${typeof win.key === 'string' && win.key.toLowerCase() === 'argon_weekly' ? ' quota-card-window-label--argon' : ''}`}>{windowLabel(win)}</span>
                       <QuotaWindowCell windowData={win} />
                     </div>
                   ))

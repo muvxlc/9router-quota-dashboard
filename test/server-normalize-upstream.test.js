@@ -125,6 +125,66 @@ test('normalizeQuotaData handles null v zero, unknown as null, and provider erro
   assert.equal(generic.windows[0].recurring, false);
 });
 
+test('normalizeQuotaData preserves explicit generic null remaining percentage', () => {
+  const normalized = normalizeQuotaData('c-gen-null', 'unknown_provider', {
+    quotas: {
+      pool: { name: 'Pool', used: 25, total: 100, remainingPercentage: null, unit: 'requests', resetAt: null },
+    },
+  });
+
+  assert.deepEqual(normalized.windows[0], {
+    key: 'pool',
+    label: 'Pool',
+    remainingPercent: null,
+    used: 25,
+    total: 100,
+    unit: 'requests',
+    resetAt: null,
+    unlimited: false,
+    recurring: true,
+  });
+});
+
+test('normalizeQuotaData preserves zero generic remaining percentage', () => {
+  const normalized = normalizeQuotaData('c-gen-zero', 'unknown_provider', {
+    quotas: {
+      pool: { name: 'Pool', used: 100, total: 100, remainingPercentage: 0, unit: 'requests', resetAt: null },
+    },
+  });
+
+  assert.deepEqual(normalized.windows[0], {
+    key: 'pool',
+    label: 'Pool',
+    remainingPercent: 0,
+    used: 100,
+    total: 100,
+    unit: 'requests',
+    resetAt: null,
+    unlimited: false,
+    recurring: true,
+  });
+});
+
+test('normalizeQuotaData derives generic remaining percentage when absent', () => {
+  const normalized = normalizeQuotaData('c-gen-derived', 'unknown_provider', {
+    quotas: {
+      pool: { name: 'Pool', used: 25, total: 100, unit: 'requests', resetAt: null },
+    },
+  });
+
+  assert.deepEqual(normalized.windows[0], {
+    key: 'pool',
+    label: 'Pool',
+    remainingPercent: 75,
+    used: 25,
+    total: 100,
+    unit: 'requests',
+    resetAt: null,
+    unlimited: false,
+    recurring: true,
+  });
+});
+
 // --- STATS NORMALIZATION TESTS ---
 test('normalizeStats aggregates byAccount correctly without double counting cached tokens', () => {
   const rawStats = {

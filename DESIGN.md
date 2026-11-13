@@ -60,6 +60,7 @@ Reading this as: Quota and traffic governor dashboard for local AI gateway opera
 - Quotas: 2 equal cells below (`grid-template-columns: repeat(2, 1fr)`), gap 8px.
 - Touch targets: minimum 44px height for interactive controls.
 - Font scaling: no shrinking below 10.5px. Use grid wrapping instead of font reduction.
+- Layout (Live Models quota cards): In the existing `.quota-cards-grid`, use `repeat(auto-fill, minmax(210px, 1fr))` with a 10px gap and 210px minimum. Antigravity and OpenCode cards with exactly three filtered windows span two base tracks plus one gap when grid content width is at least 430px; below 430px, each card occupies one full-width track. Codex cards always occupy one base track. `.quota-cards-grid` owns vertical scrolling within `.quota-cards`, capped at 48vh; the page does not scroll. Avoid dense auto-flow, viewport-hardcoded account placement, and implicit overflowing tracks. Source pattern: StyleGallery `card-grid`.
 
 ## 4. Content Hierarchy & Core Flows
 

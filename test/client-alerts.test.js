@@ -5,6 +5,7 @@ import {
   buildIncidentKey,
   checkAccountsForAlerts,
 } from '../lib/client/alerts.js';
+import { deriveAccountStatus, getLiveModelQuotaWindows } from '../lib/client/selectors.js';
 
 test('isAccountAlertable identifies exhausted quotas and auth failures only', () => {
   const normalAccount = {
@@ -28,6 +29,26 @@ test('isAccountAlertable identifies exhausted quotas and auth failures only', ()
   assert.equal(isAccountAlertable(exhaustedAccount), true);
   assert.equal(isAccountAlertable(authRequiredAccount), true);
   assert.equal(isAccountAlertable(staleAccount), false);
+});
+
+test('OpenCode monthly unknown data stays partial, while zero quota alerts', () => {
+  const makeAccount = (monthlyRemainingPercent) => {
+    const windows = getLiveModelQuotaWindows('opencode', [
+      { key: 'rolling', remainingPercent: 70 },
+      { key: 'weekly', remainingPercent: 80 },
+      { key: 'monthly', remainingPercent: monthlyRemainingPercent },
+    ]);
+    const quota = { status: 'ok', windows };
+    return { provider: 'opencode', quota, effectiveStatus: deriveAccountStatus({ active: true }, quota) };
+  };
+
+  const partial = makeAccount(null);
+  assert.equal(partial.effectiveStatus.status, 'partial');
+  assert.equal(isAccountAlertable(partial), false);
+
+  const exhausted = makeAccount(0);
+  assert.equal(exhausted.effectiveStatus.status, 'exhausted');
+  assert.equal(isAccountAlertable(exhausted), true);
 });
 
 test('checkAccountsForAlerts triggers notification once and deduplicates on subsequent polls', () => {

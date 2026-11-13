@@ -32,6 +32,23 @@ test('Live Models keeps three selected Antigravity windows and two Codex windows
   );
 });
 
+test('Live Models applies canonical provider allowlists without mutating inputs', () => {
+  const cases = [
+    { provider: 'opencode', input: ['MONTHLY', 'weekly', 'rolling'], expected: ['rolling', 'weekly', 'MONTHLY'] },
+    { provider: 'opencode-go', input: ['weekly', 'rolling'], expected: ['rolling', 'weekly'] },
+    { provider: 'codex', input: ['monthly', 'review_weekly', 'weekly', 'review_session', 'spark_session', 'session', 'spark_weekly'], expected: ['session', 'weekly'] },
+    { provider: 'unknown', input: ['monthly', 'rolling', 'weekly'], expected: ['weekly', 'rolling'] },
+    { provider: 'antigravity', input: ['argon_weekly', 'gemini_weekly', 'gemini'], expected: ['gemini', 'gemini_weekly', 'argon_weekly'] },
+  ];
+
+  for (const { provider, input, expected } of cases) {
+    const windows = input.map((key) => ({ key }));
+    const original = [...windows];
+    assert.deepEqual(getLiveModelQuotaWindows(provider, windows).map((window) => window.key), expected, provider);
+    assert.deepEqual(windows, original, `${provider} input remains unchanged`);
+  }
+});
+
 test('deriveAccountStatus identifies inactive, unavailable, no-data, exhausted, low, and healthy', () => {
   // Inactive connection
   assert.deepEqual(deriveAccountStatus({ active: false }, null), {

@@ -163,6 +163,7 @@
 }
 .quota-cards-grid {
   display: grid;
+  container-type: inline-size;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   grid-auto-rows: 1fr;
   align-items: stretch;
@@ -171,6 +172,11 @@
   min-width: 0;
   overflow-y: auto;
   max-height: calc(48vh - 44px);
+}
+@container (min-width: 430px) {
+  .quota-card--wide {
+    grid-column: span 2;
+  }
 }
 .quota-card {
   display: flex;
@@ -232,6 +238,9 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--theme-text-muted);
+}
+.quota-card-window-label--argon {
+  text-transform: none;
 }
 .quota-card .pp-quota-cell {
   width: 100%;
